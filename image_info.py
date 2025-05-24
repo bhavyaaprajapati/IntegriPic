@@ -6,7 +6,7 @@ import sys
 import platform
 import time
 from image_ela import perform_ela_analysis
-
+from image_compare import compare_images
 
 def extract_metadata(image_path):
     try:
@@ -61,4 +61,11 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Error opening image: {e}")
         print("\n--- End of Information ---")
+        if input("Do you want to compare with another image? (y/n): ").lower() == 'y':
+            second_path = input("Enter second image path: ").strip()
+            if os.path.isfile(second_path):
+                print("\n--- Comparing Images ---")
+                compare_images(path, second_path)
+            else:
+                print("Second image file not found.")
         print("Thank you for using the image info tool.")
