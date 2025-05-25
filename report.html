@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Image Forensic Report - {{image_name}}</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Image Forensic Report</h1>
+
+    <div class="section">
+        <h2>Image Info</h2>
+        <p><strong>Image:</strong> {{image_name}}</p>
+        <p><strong>SHA256 Hash:</strong> {{hash_value}}</p>
+    </div>
+
+    <div class="section">
+        <h2>Metadata</h2>
+        <pre>{{metadata}}</pre>
+    </div>
+
+    <div class="section">
+        <h2>ELA Image</h2>
+        <img src="{{ela_img}}" alt="ELA Image">
+    </div>
+
+    {{compare_section}}
+
+    {{stego_section}}
+
+    {{system_info_section}}
+</body>
+</html>
