@@ -1,0 +1,63 @@
+
+    <!DOCTYPE html>
+    <html lang='en'>
+    <head>
+        <meta charset='UTF-8'>
+        <title>Image Analysis Report - sample1.jpg</title>
+        
+    <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fb; color: #222; margin: 0; padding: 0; }
+    .container { max-width: 900px; margin: 40px auto; background: #fff; border-radius: 16px; box-shadow: 0 4px 24px #0001; padding: 32px; }
+    h1 { color: #2a5298; text-align: center; margin-bottom: 0.5em; }
+    .section { margin-bottom: 2em; padding: 1.5em; border-radius: 12px; background: #f0f4fa; box-shadow: 0 2px 8px #0001; }
+    .section h2 { color: #1e3c72; margin-top: 0; }
+    .meta-table { width: 100%; border-collapse: collapse; }
+    .meta-table th, .meta-table td { padding: 8px 12px; border-bottom: 1px solid #e0e6ed; }
+    .meta-table th { background: #e3ecfa; text-align: left; }
+    .image-row { display: flex; gap: 32px; justify-content: center; align-items: flex-start; margin-top: 1em; }
+    .image-col { flex: 1; text-align: center; }
+    img { max-width: 100%; border-radius: 8px; box-shadow: 0 2px 8px #0002; }
+    .hash { font-family: 'Consolas', monospace; background: #e3ecfa; padding: 6px 12px; border-radius: 6px; display: inline-block; }
+    .footer { text-align: center; color: #888; margin-top: 2em; font-size: 0.95em; }
+    </style>
+    
+    </head>
+    <body>
+        <div class='container'>
+            <h1>Image Analysis Report</h1>
+            <div class='section'>
+                <h2>Image Name</h2>
+                <p><b>sample1.jpg</b></p>
+                <h2>SHA256 Hash</h2>
+                <p class='hash'>ad06b81931efc056cd3ea6f7ce0033a740fd4cb702636515927a1e848fb4c898</p>
+            </div>
+            <div class='section'>
+                <h2>Metadata</h2>
+                <table class='meta-table'></table>
+            </div>
+            <div class='image-row'>
+        <div class='image-col'>
+            <h3>ELA Image</h3>
+            <img src='sample1_ELA.png' alt='ELA Image'>
+        </div>
+        <div class='image-col'>
+            <h3>Comparison Image</h3>
+            <img src='diff_sample1_sample2.png' alt='Difference Image'>
+        </div></div>
+            
+        <div class='section'>
+            <h2>Steganography Detection</h2>
+            <p>Error checking steganography: Impossible to detect message.</p>
+        </div>
+            
+        <div class='section'>
+            <h2>System Information</h2>
+            <p>OS: Windows 11</p>
+        </div>
+            <div class='footer'>
+                Generated on 2025-05-26 07:53:52 | IntegriPic Tool
+            </div>
+        </div>
+    </body>
+    </html>
+    
