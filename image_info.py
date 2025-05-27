@@ -17,8 +17,7 @@ def get_first_jpg_image():
     return None
 def generate_report_from_template(image_name, hash_value, metadata, ela_img,
                                   diff_img=None, stego_result=None, os_info=None):
-    with open("report.html", "r", encoding="utf-8") as f:
-        template = f.read()
+    # Removed reading report.html template file
 
     # Creative CSS styling
     style = '''
@@ -38,6 +37,7 @@ def generate_report_from_template(image_name, hash_value, metadata, ela_img,
     .footer { text-align: center; color: #888; margin-top: 2em; font-size: 0.95em; }
     </style>
     '''
+    # ...rest of your function unchanged...
 
     # Prepare metadata as a table if possible
     meta_html = "<table class='meta-table'>"
@@ -138,6 +138,19 @@ def extract_metadata(image_path):
     except Exception as e:
         print(f"Error reading metadata: {e}")
         return {}
+def detect_steganography(image_path):
+    try:
+        if not image_path.lower().endswith('.png'):
+            print("Steganography detection only works with PNG images.")
+            return
+        hidden_message = lsb.reveal(image_path)
+        if hidden_message:
+            print("\n--- Hidden Data Detected (LSB) ---")
+            print(f"Message: {hidden_message}")
+        else:
+            print("\n--- No hidden message found using LSB method ---")
+    except Exception as e:
+        print(f"\nError checking steganography: {e}")
 
 def calculate_sha256(image_path):
     try:
@@ -148,6 +161,9 @@ def calculate_sha256(image_path):
         return None
 def detect_steganography(image_path):
     try:
+        if not image_path.lower().endswith('.png'):
+            print("Steganography detection only works with PNG images. JPG is not supported.")
+            return
         hidden_message = lsb.reveal(image_path)
         if hidden_message:
             print("\n--- Hidden Data Detected (LSB) ---")
@@ -159,75 +175,75 @@ def detect_steganography(image_path):
 
 if __name__ == "__main__":
     path = get_first_jpg_image()
-if not path:
-    print("No .jpg image found in the current directory.")
-    sys.exit()
-else:
-    print(f"Using image: {path}")
-
-    if not os.path.isfile(path):
-        print("File does not exist. Please check the path.")
+    if not path:
+        print("No .jpg image found in the current directory.")
+        sys.exit()
     else:
-        meta = extract_metadata(path)
-        print("\n--- Metadata ---")
-        if meta:
-            for k, v in meta.items():
-                print(f"{k}: {v}")
-            # Format metadata as a string for HTML
-            meta_str = '\n'.join([f"{k}: {v}" for k, v in meta.items()])
+        print(f"Using image: {path}")
+
+        if not os.path.isfile(path):
+            print("File does not exist. Please check the path.")
         else:
-            print("No metadata found or image not readable.")
-            meta_str = "No metadata found or image not readable."
-        
-        hash_val = calculate_sha256(path)
-        if hash_val:
-            print(f"\nSHA256 Hash: {hash_val}")
-        else:
-            print("Could not calculate hash.")
-        print("\n--- Image Information ---")
-        ela_img = None
-        try:
-            with Image.open(path) as img:
-                print(f"Format: {img.format}")
-                print(f"Size: {img.size}")
-                print(f"Mode: {img.mode}")
-                print(f"Info: {img.info}")
-                print("\n--- Running Error Level Analysis (ELA) ---")
-                perform_ela_analysis(path)
-                ela_img = os.path.splitext(path)[0] + '_ELA.png'
-        except Exception as e:
-            print(f"Error opening image: {e}")
-        print("\n--- End of Information ---")
-        diff_img = None
-        if input("Do you want to compare with another image? (y/n): ").lower() == 'y':
-            second_path = input("Enter second image path: ").strip()
-            if os.path.isfile(second_path):
-                print("\n--- Comparing Images ---")
-                compare_images(path, second_path)
-                diff_img = f"diff_{os.path.basename(path).split('.')[0]}_{os.path.basename(second_path).split('.')[0]}.png"
+            meta = extract_metadata(path)
+            print("\n--- Metadata ---")
+            if meta:
+                for k, v in meta.items():
+                    print(f"{k}: {v}")
+                # Format metadata as a string for HTML
+                meta_str = '\n'.join([f"{k}: {v}" for k, v in meta.items()])
             else:
-                print("Second image file not found.")
-        print("\n--- Checking for Steganography ---")
-        stego_result = None
-        try:
-            hidden_message = lsb.reveal(path)
-            if hidden_message:
-                stego_result = f"Hidden message: {hidden_message}"
+                print("No metadata found or image not readable.")
+                meta_str = "No metadata found or image not readable."
+            
+            hash_val = calculate_sha256(path)
+            if hash_val:
+                print(f"\nSHA256 Hash: {hash_val}")
             else:
-                stego_result = "No hidden message found using LSB method."
-        except Exception as e:
-            stego_result = f"Error checking steganography: {e}"
-        print("\n--- System Information ---")
-        os_info = f"OS: {platform.system()} {platform.release()}"
-        print(os_info)
-        print("Thank you for using the image info tool.")
-        # Generate dynamic HTML report
-        generate_report_from_template(
-            image_name=os.path.basename(path),
-            hash_value=hash_val or "N/A",
-            metadata=meta_str,
-            ela_img=ela_img or "",
-            diff_img=diff_img,
-            stego_result=stego_result,
-            os_info=os_info
-        )
+                print("Could not calculate hash.")
+            print("\n--- Image Information ---")
+            ela_img = None
+            try:
+                with Image.open(path) as img:
+                    print(f"Format: {img.format}")
+                    print(f"Size: {img.size}")
+                    print(f"Mode: {img.mode}")
+                    print(f"Info: {img.info}")
+                    print("\n--- Running Error Level Analysis (ELA) ---")
+                    perform_ela_analysis(path)
+                    ela_img = os.path.splitext(path)[0] + '_ELA.png'
+            except Exception as e:
+                print(f"Error opening image: {e}")
+            print("\n--- End of Information ---")
+            diff_img = None
+            if input("Do you want to compare with another image? (y/n): ").lower() == 'y':
+                second_path = input("Enter second image path: ").strip()
+                if os.path.isfile(second_path):
+                    print("\n--- Comparing Images ---")
+                    compare_images(path, second_path)
+                    diff_img = f"diff_{os.path.basename(path).split('.')[0]}_{os.path.basename(second_path).split('.')[0]}.png"
+                else:
+                    print("Second image file not found.")
+            print("\n--- Checking for Steganography ---")
+            stego_result = None
+            try:
+                hidden_message = lsb.reveal(path)
+                if hidden_message:
+                    stego_result = f"Hidden message: {hidden_message}"
+                else:
+                    stego_result = "No hidden message found using LSB method."
+            except Exception as e:
+                stego_result = f"Error checking steganography: {e}"
+            print("\n--- System Information ---")
+            os_info = f"OS: {platform.system()} {platform.release()}"
+            print(os_info)
+            print("Thank you for using the image info tool.")
+            # Generate dynamic HTML report
+            generate_report_from_template(
+                image_name=os.path.basename(path),
+                hash_value=hash_val or "N/A",
+                metadata=meta_str,
+                ela_img=ela_img or "",
+                diff_img=diff_img,
+                stego_result=stego_result,
+                os_info=os_info
+            )
