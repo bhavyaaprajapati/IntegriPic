@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Upload Image - IntegriPic{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="main-content">
+            <div class="text-center mb-4">
+                <i class="bi bi-cloud-upload text-primary" style="font-size: 3rem;"></i>
+                <h2 class="mt-3">Upload Image for Analysis</h2>
+                <p class="text-muted">Choose an image file to analyze. We support JPG, PNG, BMP, and TIFF formats.</p>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" id="uploadForm">
+                {% csrf_token %}
+                {{ form|crispy }}
+                
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                        <i class="bi bi-cloud-upload"></i> Upload and Analyze
+                    </button>
+                </div>
+            </form>
+
+            <!-- Upload Preview -->
+            <div id="imagePreview" class="mt-4" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-eye"></i> Image Preview</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <img id="previewImg" class="img-fluid" style="max-height: 300px; border-radius: 8px;">
+                        <div class="mt-3">
+                            <p id="fileInfo" class="text-muted"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Options Info -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <h4 class="text-center mb-4">What happens after upload?</h4>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-search text-primary" style="font-size: 2rem;"></i>
+                            <h5 class="mt-3">Metadata Extraction</h5>
+                            <p class="text-muted">We'll extract EXIF data, camera settings, GPS coordinates, and other technical information.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-eye text-warning" style="font-size: 2rem;"></i>
+                            <h5 class="mt-3">ELA Analysis</h5>
+                            <p class="text-muted">Error Level Analysis will help detect image manipulations and potential forgeries.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-shield-lock text-success" style="font-size: 2rem;"></i>
+                            <h5 class="mt-3">Hidden Data Detection</h5>
+                            <p class="text-muted">We'll scan for steganographically hidden data and messages within the image.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+                <h5>Analyzing your image...</h5>
+                <p class="text-muted mb-0">This may take a few moments depending on the image size.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('id_image').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const preview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    const fileInfo = document.getElementById('fileInfo');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            fileInfo.innerHTML = `
+                <strong>File:</strong> ${file.name}<br>
+                <strong>Size:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB<br>
+                <strong>Type:</strong> ${file.type}
+            `;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.style.display = 'none';
+    }
+});
+
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    modal.show();
+});
+</script>
+{% endblock %}

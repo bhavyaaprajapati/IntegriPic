@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}System Statistics - IntegriPic{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin: 0;
+    }
+    .stats-label {
+        font-size: 0.9rem;
+        opacity: 0.8;
+        margin: 0;
+    }
+    .activity-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-chart-bar"></i> System Statistics</h2>
+                <a href="{% url 'reports:admin_reports' %}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left"></i> Back to Reports
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4><i class="fas fa-users"></i> User Statistics</h4>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <p class="stats-number">{{ stats.total_users }}</p>
+                <p class="stats-label">Total Users</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <p class="stats-number">{{ stats.active_users }}</p>
+                <p class="stats-label">Active Users</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <p class="stats-number">{{ stats.staff_users }}</p>
+                <p class="stats-label">Staff Users</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image & Analysis Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4><i class="fas fa-images"></i> Image & Analysis Statistics</h4>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <p class="stats-number">{{ stats.total_images }}</p>
+                <p class="stats-label">Total Images</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <p class="stats-number">{{ stats.total_analyses }}</p>
+                <p class="stats-label">Total Analyses</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <p class="stats-number">{{ stats.total_comparisons }}</p>
+                <p class="stats-label">Total Comparisons</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Statistics -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4><i class="fas fa-file-alt"></i> Report Statistics</h4>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <p class="stats-number">{{ stats.total_analysis_reports }}</p>
+                <p class="stats-label">Analysis Reports</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <p class="stats-number">{{ stats.total_comparison_reports }}</p>
+                <p class="stats-label">Comparison Reports</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <p class="stats-number">{{ stats.total_reports }}</p>
+                <p class="stats-label">Total Reports</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-12">
+            <h4><i class="fas fa-clock"></i> Recent Activity (Last 30 Days)</h4>
+        </div>
+        <div class="col-md-4">
+            <div class="activity-card">
+                <h5 class="text-primary">{{ stats.recent_uploads }}</h5>
+                <p class="mb-0">New Image Uploads</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="activity-card">
+                <h5 class="text-success">{{ stats.recent_analyses }}</h5>
+                <p class="mb-0">New Analyses</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="activity-card">
+                <h5 class="text-info">{{ stats.recent_reports }}</h5>
+                <p class="mb-0">New Reports</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

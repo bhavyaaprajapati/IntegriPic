@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - IntegriPic{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Welcome Section -->
+    <div class="col-12">
+        <div class="main-content mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="bi bi-house text-primary"></i> Welcome back, {{ user.get_full_name|default:user.username }}!</h1>
+                    <p class="lead text-muted">Ready to analyze some images? Upload new images or continue working with your existing ones.</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <a href="{% url 'analysis:upload' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-cloud-upload"></i> Upload Image
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Quick Stats -->
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-images text-primary" style="font-size: 2.5rem;"></i>
+                <h3 class="mt-3">{{ stats.total_images }}</h3>
+                <p class="text-muted mb-0">Total Images</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-search text-success" style="font-size: 2.5rem;"></i>
+                <h3 class="mt-3">{{ stats.total_analyses }}</h3>
+                <p class="text-muted mb-0">Analyses Done</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-aspect-ratio text-warning" style="font-size: 2.5rem;"></i>
+                <h3 class="mt-3">{{ stats.total_comparisons }}</h3>
+                <p class="text-muted mb-0">Comparisons</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-file-earmark-text text-info" style="font-size: 2.5rem;"></i>
+                <h3 class="mt-3">{{ stats.total_reports }}</h3>
+                <p class="text-muted mb-0">Reports Generated</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Analyses -->
+    <div class="col-md-8">
+        <div class="main-content">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4><i class="bi bi-clock-history"></i> Recent Analyses</h4>
+                <a href="{% url 'analysis:analysis_list' %}" class="btn btn-outline-primary btn-sm">
+                    View All <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            
+            {% if recent_analyses %}
+                <div class="row">
+                    {% for analysis in recent_analyses %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title mb-1">{{ analysis.original_filename|truncatechars:30 }}</h6>
+                                    <p class="text-muted mb-2">
+                                        <small>
+                                            Status: 
+                                            {% if analysis.status == 'completed' %}
+                                                <span class="badge bg-success">{{ analysis.get_status_display }}</span>
+                                            {% elif analysis.status == 'failed' %}
+                                                <span class="badge bg-danger">{{ analysis.get_status_display }}</span>
+                                            {% elif analysis.status == 'processing' %}
+                                                <span class="badge bg-warning">{{ analysis.get_status_display }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ analysis.get_status_display }}</span>
+                                            {% endif %}
+                                        </small>
+                                    </p>
+                                    <small class="text-muted">{{ analysis.created_at|timesince }} ago</small>
+                                    <div class="mt-2">
+                                        <a href="{% url 'analysis:analysis_detail' analysis.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> View Results
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-3">No analyses performed yet</p>
+                    <a href="{% url 'analysis:upload' %}" class="btn btn-primary">
+                        <i class="bi bi-cloud-upload"></i> Upload and Analyze Your First Image
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="col-md-4">
+        <div class="sidebar">
+            <h5><i class="bi bi-lightning"></i> Quick Actions</h5>
+            
+            <div class="d-grid gap-2">
+                <a href="{% url 'analysis:upload' %}" class="btn btn-primary">
+                    <i class="bi bi-cloud-upload"></i> Upload New Image
+                </a>
+                
+                <a href="{% url 'analysis:compare' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-aspect-ratio"></i> Compare Images
+                </a>
+                
+                <a href="{% url 'reports:user_reports' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-file-earmark-text"></i> View Reports
+                </a>
+            </div>
+            
+            <hr class="my-3">
+            
+            <h6><i class="bi bi-info-circle"></i> Analysis Types</h6>
+            <ul class="list-unstyled">
+                <li class="mb-2">
+                    <i class="bi bi-search text-primary"></i>
+                    <strong>Metadata Analysis</strong><br>
+                    <small class="text-muted">Extract EXIF data and technical information</small>
+                </li>
+                <li class="mb-2">
+                    <i class="bi bi-eye text-warning"></i>
+                    <strong>ELA Analysis</strong><br>
+                    <small class="text-muted">Detect image manipulations and edits</small>
+                </li>
+                <li class="mb-2">
+                    <i class="bi bi-shield-lock text-success"></i>
+                    <strong>Steganography</strong><br>
+                    <small class="text-muted">Find hidden data within images</small>
+                </li>
+                <li>
+                    <i class="bi bi-aspect-ratio text-info"></i>
+                    <strong>Image Comparison</strong><br>
+                    <small class="text-muted">Compare two images for differences</small>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

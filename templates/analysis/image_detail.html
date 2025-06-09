@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ image.filename }} - IntegriPic{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Image Display -->
+    <div class="col-md-8">
+        <div class="main-content">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>{{ image.filename }}</h3>
+                <div class="btn-group">
+                    {% if not analyses %}
+                        <a href="{% url 'analysis:analyze_image' image.id %}" class="btn btn-success">
+                            <i class="bi bi-search"></i> Analyze Image
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'analysis:compare' %}?image1={{ image.id }}" class="btn btn-outline-primary">
+                        <i class="bi bi-aspect-ratio"></i> Compare
+                    </a>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="bi bi-download"></i> Download
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ image.image.url }}" download>
+                                <i class="bi bi-image"></i> Original Image
+                            </a></li>
+                            {% for analysis in analyses %}
+                                {% if analysis.ela_image %}
+                                    <li><a class="dropdown-item" href="{{ analysis.ela_image.url }}" download>
+                                        <i class="bi bi-eye"></i> ELA Analysis
+                                    </a></li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Viewer -->
+            <div class="card mb-4">
+                <div class="card-body p-0">
+                    <img src="{{ image.image.url }}" class="analysis-image w-100" alt="{{ image.filename }}" id="mainImage">
+                </div>
+                <div class="card-footer">
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <strong>{{ image.file_size|filesizeformat }}</strong><br>
+                            <small class="text-muted">File Size</small>
+                        </div>
+                        <div class="col-3">
+                            <strong>{{ image.image.width }}×{{ image.image.height }}</strong><br>
+                            <small class="text-muted">Dimensions</small>
+                        </div>
+                        <div class="col-3">
+                            <strong>{{ image.uploaded_at|date:"M j, Y" }}</strong><br>
+                            <small class="text-muted">Uploaded</small>
+                        </div>
+                        <div class="col-3">
+                            <strong>{{ analyses.count }}</strong><br>
+                            <small class="text-muted">Analyses</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Results -->
+            {% if analyses %}
+                {% for analysis in analyses %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5><i class="bi bi-search"></i> Analysis Results</h5>
+                                <small class="text-muted">{{ analysis.created_at|date:"M j, Y g:i A" }}</small>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Metadata -->
+                            {% if analysis.metadata %}
+                                <h6><i class="bi bi-info-circle"></i> Metadata</h6>
+                                <div class="table-responsive mb-4">
+                                    <table class="table table-sm metadata-table">
+                                        {% for key, value in analysis.metadata.items %}
+                                            <tr>
+                                                <th style="width: 30%;">{{ key }}</th>
+                                                <td>{{ value }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </table>
+                                </div>
+                            {% endif %}
+
+                            <!-- Hash Values -->
+                            {% if analysis.md5_hash or analysis.sha256_hash %}
+                                <h6><i class="bi bi-shield-check"></i> Hash Values</h6>
+                                <div class="row mb-4">
+                                    {% if analysis.md5_hash %}
+                                        <div class="col-md-6">
+                                            <label class="form-label"><strong>MD5:</strong></label>
+                                            <div class="hash-display">{{ analysis.md5_hash }}</div>
+                                        </div>
+                                    {% endif %}
+                                    {% if analysis.sha256_hash %}
+                                        <div class="col-md-6">
+                                            <label class="form-label"><strong>SHA256:</strong></label>
+                                            <div class="hash-display">{{ analysis.sha256_hash }}</div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+
+                            <!-- ELA Analysis -->
+                            {% if analysis.ela_image %}
+                                <h6><i class="bi bi-eye"></i> Error Level Analysis (ELA)</h6>
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <div class="text-center">
+                                            <img src="{{ image.image.url }}" class="img-fluid analysis-image mb-2" style="max-height: 250px;" alt="Original">
+                                            <p class="small text-muted">Original Image</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="text-center">
+                                            <img src="{{ analysis.ela_image.url }}" class="img-fluid analysis-image mb-2" style="max-height: 250px;" alt="ELA Analysis">
+                                            <p class="small text-muted">ELA Analysis</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% if analysis.ela_analysis %}
+                                    <div class="alert alert-info">
+                                        <strong>ELA Results:</strong> {{ analysis.ela_analysis }}
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+
+                            <!-- Steganography Results -->
+                            {% if analysis.steganography_result %}
+                                <h6><i class="bi bi-shield-lock"></i> Hidden Data Detection</h6>
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <strong>Hidden data detected!</strong>
+                                    {% if analysis.steganography_message %}
+                                        <br>Hidden message: <code>{{ analysis.steganography_message }}</code>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <h6><i class="bi bi-shield-check"></i> Hidden Data Detection</h6>
+                                <div class="alert alert-success">
+                                    <i class="bi bi-check-circle"></i>
+                                    No hidden data detected in this image.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+                        <h4 class="mt-3 text-muted">No Analysis Yet</h4>
+                        <p class="text-muted">This image hasn't been analyzed yet. Click the button above to start analysis.</p>
+                        <a href="{% url 'analysis:analyze_image' image.id %}" class="btn btn-success">
+                            <i class="bi bi-search"></i> Analyze Now
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <div class="sidebar">
+            <h5><i class="bi bi-info-circle"></i> Image Information</h5>
+            
+            <div class="mb-3">
+                <strong>Filename:</strong><br>
+                <span class="text-muted">{{ image.filename }}</span>
+            </div>
+            
+            <div class="mb-3">
+                <strong>Upload Date:</strong><br>
+                <span class="text-muted">{{ image.uploaded_at|date:"F j, Y g:i A" }}</span>
+            </div>
+            
+            <div class="mb-3">
+                <strong>File Size:</strong><br>
+                <span class="text-muted">{{ image.file_size|filesizeformat }}</span>
+            </div>
+            
+            <div class="mb-3">
+                <strong>Dimensions:</strong><br>
+                <span class="text-muted">{{ image.image.width }} × {{ image.image.height }} pixels</span>
+            </div>
+            
+            <div class="mb-4">
+                <strong>Status:</strong><br>
+                {% if analyses %}
+                    <span class="badge bg-success">Analyzed</span>
+                {% else %}
+                    <span class="badge bg-warning">Pending Analysis</span>
+                {% endif %}
+            </div>
+
+            <hr>
+
+            <h6><i class="bi bi-lightning"></i> Quick Actions</h6>
+            <div class="d-grid gap-2">
+                {% if not analyses %}
+                    <a href="{% url 'analysis:analyze_image' image.id %}" class="btn btn-success">
+                        <i class="bi bi-search"></i> Analyze Image
+                    </a>
+                {% endif %}
+                <a href="{% url 'analysis:compare' %}?image1={{ image.id }}" class="btn btn-outline-primary">
+                    <i class="bi bi-aspect-ratio"></i> Compare with Another
+                </a>
+                {% if analyses %}
+                    <a href="{% url 'reports:generate_analysis_report' analyses.0.id %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-file-earmark-text"></i> Generate Report
+                    </a>
+                {% endif %}
+            </div>
+
+            {% if analyses %}
+                <hr>
+                <h6><i class="bi bi-clock-history"></i> Analysis History</h6>
+                {% for analysis in analyses %}
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="small">Analysis #{{ forloop.counter }}</span>
+                            <span class="small text-muted">{{ analysis.created_at|timesince }} ago</span>
+                        </div>
+                        <div class="small text-muted">
+                            {% if analysis.steganography_result %}
+                                <i class="bi bi-exclamation-triangle text-warning"></i> Hidden data found
+                            {% else %}
+                                <i class="bi bi-check-circle text-success"></i> No issues detected
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

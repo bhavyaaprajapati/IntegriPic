@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+
+{% block title %}Analysis Results - IntegriPic{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="text-center mb-4">
+        {% if analysis.status == 'completed' %}
+            <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+        {% elif analysis.status == 'failed' %}
+            <i class="bi bi-x-circle text-danger" style="font-size: 3rem;"></i>
+        {% elif analysis.status == 'processing' %}
+            <i class="bi bi-arrow-clockwise text-warning" style="font-size: 3rem;"></i>
+        {% else %}
+            <i class="bi bi-clock text-secondary" style="font-size: 3rem;"></i>
+        {% endif %}
+        <h2 class="mt-3">Analysis Results</h2>
+        <p class="text-muted">Comprehensive forensic analysis of {{ analysis.original_filename }}</p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h4><i class="bi bi-file-image"></i> {{ analysis.original_filename }}</h4>
+            <small class="text-muted">
+                Status: 
+                {% if analysis.status == 'completed' %}
+                    <span class="badge bg-success">{{ analysis.get_status_display }}</span>
+                {% elif analysis.status == 'failed' %}
+                    <span class="badge bg-danger">{{ analysis.get_status_display }}</span>
+                {% elif analysis.status == 'processing' %}
+                    <span class="badge bg-warning">{{ analysis.get_status_display }}</span>
+                {% else %}
+                    <span class="badge bg-secondary">{{ analysis.get_status_display }}</span>
+                {% endif %}
+                | Created: {{ analysis.created_at|date:"M d, Y H:i" }}
+                {% if analysis.analysis_duration %}
+                    | Duration: {{ analysis.analysis_duration|floatformat:2 }}s
+                {% endif %}
+            </small>
+        </div>
+        <div class="card-body">
+            <!-- Image Information -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5><i class="bi bi-info-circle"></i> File Information</h5>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Filename:</strong></td>
+                            <td>{{ analysis.original_filename }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>File Size:</strong></td>
+                            <td>{{ analysis.file_size_mb }} MB</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Format:</strong></td>
+                            <td>{{ analysis.image_format }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Dimensions:</strong></td>
+                            <td>{{ analysis.image_width }} x {{ analysis.image_height }} pixels</td>
+                        </tr>
+                        <tr>
+                            <td><strong>SHA256 Hash:</strong></td>
+                            <td><code>{{ analysis.sha256_hash|truncatechars:32 }}...</code></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h5><i class="bi bi-gear"></i> System Information</h5>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>Analysis Date:</strong></td>
+                            <td>{{ analysis.created_at|date:"M d, Y H:i:s" }}</td>
+                        </tr>
+                        {% if analysis.analysis_duration %}
+                        <tr>
+                            <td><strong>Processing Time:</strong></td>
+                            <td>{{ analysis.analysis_duration|floatformat:2 }} seconds</td>
+                        </tr>
+                        {% endif %}
+                        {% if analysis.os_info %}
+                        <tr>
+                            <td><strong>System:</strong></td>
+                            <td>{{ analysis.os_info }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+
+            {% if analysis.status == 'completed' %}
+                <!-- Metadata Analysis -->
+                {% if analysis.metadata %}
+                <div class="card bg-light mb-4">
+                    <div class="card-header">
+                        <h5><i class="bi bi-tags"></i> EXIF Metadata</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for key, value in analysis.metadata.items %}
+                                <div class="col-md-6 mb-2">
+                                    <strong>{{ key }}:</strong> {{ value|truncatechars:50 }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- ELA Analysis -->
+                {% if analysis.ela_analysis_performed %}
+                <div class="card bg-light mb-4">
+                    <div class="card-header">
+                        <h5><i class="bi bi-eye"></i> Error Level Analysis (ELA)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>ELA Analysis Completed</strong><br>
+                            Error Level Analysis was performed to detect potential image manipulations. 
+                            This technique reveals areas of different compression levels within JPEG images.
+                        </div>
+                        {% if analysis.ela_results %}
+                            <h6>Analysis Results:</h6>
+                            <pre class="bg-white p-3 border rounded">{{ analysis.ela_results|pprint }}</pre>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Steganography Analysis -->
+                <div class="card bg-light mb-4">
+                    <div class="card-header">
+                        <h5><i class="bi bi-shield-lock"></i> Steganography Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if analysis.steganography_result %}
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>Steganography Detection:</strong> {{ analysis.steganography_result }}
+                            </div>
+                            {% if analysis.steganography_message %}
+                                <h6>Hidden Message Found:</h6>
+                                <div class="alert alert-secondary">
+                                    <pre>{{ analysis.steganography_message }}</pre>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle"></i>
+                                No hidden data detected using LSB steganography techniques.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+            {% elif analysis.status == 'failed' %}
+                <!-- Error Information -->
+                <div class="alert alert-danger">
+                    <h5><i class="bi bi-exclamation-triangle"></i> Analysis Failed</h5>
+                    {% if analysis.error_message %}
+                        <p><strong>Error Details:</strong></p>
+                        <pre>{{ analysis.error_message }}</pre>
+                    {% else %}
+                        <p>The analysis could not be completed. Please try uploading the image again.</p>
+                    {% endif %}
+                </div>
+
+            {% elif analysis.status == 'processing' %}
+                <!-- Processing Status -->
+                <div class="alert alert-info">
+                    <h5><i class="bi bi-arrow-clockwise"></i> Analysis in Progress</h5>
+                    <p>Your image is currently being analyzed. This page will automatically refresh when complete.</p>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                    </div>
+                </div>
+
+            {% else %}
+                <!-- Pending Status -->
+                <div class="alert alert-secondary">
+                    <h5><i class="bi bi-clock"></i> Analysis Pending</h5>
+                    <p>Your image analysis is queued and will begin shortly.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="text-center mt-4">
+        {% if analysis.status == 'completed' %}
+            <a href="{% url 'reports:generate_analysis_report' analysis.id %}" class="btn btn-success">
+                <i class="bi bi-file-earmark-text"></i> Generate Report
+            </a>
+        {% endif %}
+        <a href="{% url 'analysis:upload' %}" class="btn btn-outline-primary">
+            <i class="bi bi-cloud-upload"></i> Analyze Another Image
+        </a>
+        <a href="{% url 'analysis:analysis_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-list"></i> All Analyses
+        </a>
+    </div>
+
+    <!-- How it Works -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h4 class="text-center mb-4">About This Analysis</h4>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-tags text-primary" style="font-size: 2rem;"></i>
+                    <h5 class="mt-3">Metadata Extraction</h5>
+                    <p class="text-muted">Extracts EXIF data including camera settings, GPS coordinates, and editing software information.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-eye text-success" style="font-size: 2rem;"></i>
+                    <h5 class="mt-3">Error Level Analysis</h5>
+                    <p class="text-muted">Detects image manipulations by analyzing compression artifacts and inconsistencies.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-shield-lock text-warning" style="font-size: 2rem;"></i>
+                    <h5 class="mt-3">Steganography Detection</h5>
+                    <p class="text-muted">Searches for hidden data embedded using LSB and other steganographic techniques.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if analysis.status == 'processing' %}
+<script>
+// Auto-refresh for processing status
+setTimeout(function() {
+    location.reload();
+}, 5000);
+</script>
+{% endif %}
+{% endblock %}

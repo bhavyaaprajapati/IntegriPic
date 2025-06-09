@@ -1,0 +1,375 @@
+{% extends 'base.html' %}
+
+{% block title %}Comparison Results - IntegriPic{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="text-center mb-4">
+        <i class="bi bi-check-circle text-success success-icon"></i>
+        <h2 class="mt-3">Comparison Results</h2>
+        <p class="text-muted">Detailed comparison analysis between your images</p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h4><i class="bi bi-aspect-ratio"></i> Image Comparison Analysis</h4>
+            <small class="text-muted">Created: {{ comparison.created_at|date:"M d, Y H:i" }}</small>
+        </div>
+        <div class="card-body">
+            <!-- Image Information Row -->
+            <div class="row mb-4">
+                <div class="col-md-6 text-center">
+                    <h6>First Image</h6>
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ comparison.image1_filename }}</h5>
+                            <p class="text-muted">File Size: {{ comparison.image1_size|filesizeformat }}</p>
+                            <p class="text-muted">Hash: <code>{{ comparison.image1_hash|truncatechars:16 }}...</code></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 text-center">
+                    <h6>Second Image</h6>
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ comparison.image2_filename }}</h5>
+                            <p class="text-muted">File Size: {{ comparison.image2_size|filesizeformat }}</p>
+                            <p class="text-muted">Hash: <code>{{ comparison.image2_hash|truncatechars:16 }}...</code></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Results -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <h5>Analysis Results</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Images Status</h6>
+                                    {% if comparison.are_identical %}
+                                        <span class="badge bg-success fs-6">
+                                            <i class="bi bi-check-circle"></i> Identical
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning fs-6">
+                                            <i class="bi bi-exclamation-triangle"></i> Different
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Similarity Score</h6>
+                                    {% if comparison.similarity_score %}
+                                        <div class="progress mb-2 similarity-progress">
+                                            <div class="progress-bar 
+                                                {% if comparison.similarity_score >= 80 %}bg-success
+                                                {% elif comparison.similarity_score >= 60 %}bg-warning
+                                                {% else %}bg-danger{% endif %}" 
+                                                 data-width="{{ comparison.similarity_score|floatformat:1|default:'0' }}">
+                                                {{ comparison.similarity_score|floatformat:1 }}%
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">Not calculated</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Details -->
+            {% if comparison.comparison_notes %}
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> Analysis Summary</h6>
+                    <p class="mb-0">{{ comparison.comparison_notes }}</p>
+                </div>
+            {% endif %}
+
+            <!-- Technical Details -->
+            {% if comparison.comparison_results %}
+                <div class="card bg-light mt-3">
+                    <div class="card-header">
+                        <h6><i class="bi bi-gear"></i> Detailed Analysis Results</h6>
+                    </div>
+                    <div class="card-body">
+                        {% if comparison.comparison_results.comparison_info %}
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <h6>Comparison Statistics</h6>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td>Different Pixels:</td>
+                                            <td><strong>{{ comparison.comparison_results.comparison_info.different_pixels|default:"N/A" }}</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Different Percentage:</td>
+                                            <td><strong>{{ comparison.comparison_results.comparison_info.different_percentage|floatformat:2|default:"N/A" }}%</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Max Difference:</td>
+                                            <td><strong>{{ comparison.comparison_results.comparison_info.max_difference|floatformat:2|default:"N/A" }}</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Average Difference:</td>
+                                            <td><strong>{{ comparison.comparison_results.comparison_info.avg_difference|floatformat:2|default:"N/A" }}</strong></td>
+                                        </tr>
+                                        {% if comparison.comparison_results.comparison_info.structural_similarity %}
+                                        <tr>
+                                            <td>Structural Similarity:</td>
+                                            <td><strong>{{ comparison.comparison_results.comparison_info.structural_similarity|floatformat:3|default:"N/A" }}</strong></td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Image Properties</h6>
+                                    <table class="table table-sm">
+                                        {% if comparison.comparison_results.image1_info %}
+                                        <tr>
+                                            <td>Image 1 Size:</td>
+                                            <td><strong>{% if comparison.comparison_results.image1_info.size %}{{ comparison.comparison_results.image1_info.size.0 }}×{{ comparison.comparison_results.image1_info.size.1 }}{% else %}Unknown{% endif %}</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Image 1 Format:</td>
+                                            <td><strong>{{ comparison.comparison_results.image1_info.format|default:"Unknown" }}</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Image 1 Pixels:</td>
+                                            <td><strong>{{ comparison.comparison_results.image1_info.total_pixels|default:"N/A" }}</strong></td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if comparison.comparison_results.image2_info %}
+                                        <tr>
+                                            <td>Image 2 Size:</td>
+                                            <td><strong>{% if comparison.comparison_results.image2_info.size %}{{ comparison.comparison_results.image2_info.size.0 }}×{{ comparison.comparison_results.image2_info.size.1 }}{% else %}Unknown{% endif %}</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Image 2 Format:</td>
+                                            <td><strong>{{ comparison.comparison_results.image2_info.format|default:"Unknown" }}</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Image 2 Pixels:</td>
+                                            <td><strong>{{ comparison.comparison_results.image2_info.total_pixels|default:"N/A" }}</strong></td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if comparison.comparison_results.color_analysis %}
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6>Color Channel Analysis</h6>
+                                    <div class="row">
+                                        {% if comparison.comparison_results.color_analysis.red_channel_similarity %}
+                                        <div class="col-md-3">
+                                            <div class="text-center">
+                                                <small class="text-muted">Red Channel</small>
+                                                <div class="progress color-progress">
+                                                    <div class="progress-bar bg-danger" 
+                                                         data-width="{{ comparison.comparison_results.color_analysis.red_channel_similarity|floatformat:1|default:'0' }}">
+                                                        {{ comparison.comparison_results.color_analysis.red_channel_similarity|floatformat:1|default:'0' }}%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        {% if comparison.comparison_results.color_analysis.green_channel_similarity %}
+                                        <div class="col-md-3">
+                                            <div class="text-center">
+                                                <small class="text-muted">Green Channel</small>
+                                                <div class="progress color-progress">
+                                                    <div class="progress-bar bg-success" 
+                                                         data-width="{{ comparison.comparison_results.color_analysis.green_channel_similarity|floatformat:1|default:'0' }}">
+                                                        {{ comparison.comparison_results.color_analysis.green_channel_similarity|floatformat:1|default:'0' }}%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        {% if comparison.comparison_results.color_analysis.blue_channel_similarity %}
+                                        <div class="col-md-3">
+                                            <div class="text-center">
+                                                <small class="text-muted">Blue Channel</small>
+                                                <div class="progress color-progress">
+                                                    <div class="progress-bar bg-primary" 
+                                                         data-width="{{ comparison.comparison_results.color_analysis.blue_channel_similarity|floatformat:1|default:'0' }}">
+                                                        {{ comparison.comparison_results.color_analysis.blue_channel_similarity|floatformat:1|default:'0' }}%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        {% if comparison.comparison_results.color_analysis.overall_color_similarity %}
+                                        <div class="col-md-3">
+                                            <div class="text-center">
+                                                <small class="text-muted">Overall Color</small>
+                                                <div class="progress color-progress">
+                                                    <div class="progress-bar bg-info" 
+                                                         data-width="{{ comparison.comparison_results.color_analysis.overall_color_similarity|floatformat:1|default:'0' }}">
+                                                        {{ comparison.comparison_results.color_analysis.overall_color_similarity|floatformat:1|default:'0' }}%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if comparison.comparison_results.color_analysis.color_difference_stats %}
+                                    <div class="mt-3">
+                                        <h6>Color Difference Statistics</h6>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <small class="text-muted">Average Red Difference:</small><br>
+                                                <strong>{{ comparison.comparison_results.color_analysis.color_difference_stats.avg_red_diff|floatformat:2|default:'N/A' }}</strong>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <small class="text-muted">Average Green Difference:</small><br>
+                                                <strong>{{ comparison.comparison_results.color_analysis.color_difference_stats.avg_green_diff|floatformat:2|default:'N/A' }}</strong>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <small class="text-muted">Average Blue Difference:</small><br>
+                                                <strong>{{ comparison.comparison_results.color_analysis.color_difference_stats.avg_blue_diff|floatformat:2|default:'N/A' }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if comparison.comparison_results.difference_region %}
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h6>Difference Analysis</h6>
+                                    <div class="alert alert-info">
+                                        {% if comparison.comparison_results.difference_region.has_differences %}
+                                            <i class="bi bi-info-circle"></i> 
+                                            Differences detected in specific regions of the images.
+                                            {% if comparison.comparison_results.difference_region.bounding_box %}
+                                                Difference bounding box: {{ comparison.comparison_results.difference_region.bounding_box }}
+                                            {% endif %}
+                                        {% else %}
+                                            <i class="bi bi-check-circle"></i> 
+                                            No significant differences detected between the images.
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% elif comparison.comparison_details %}
+                <div class="card bg-light mt-3">
+                    <div class="card-header">
+                        <h6><i class="bi bi-gear"></i> Technical Details</h6>
+                    </div>
+                    <div class="card-body">
+                        <pre class="mb-0">{{ comparison.comparison_details }}</pre>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="text-center mt-4">
+        <a href="{% url 'reports:generate_comparison_report' comparison.id %}" class="btn btn-success">
+            <i class="bi bi-file-earmark-text"></i> Generate Report
+        </a>
+        <a href="{% url 'analysis:compare' %}" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-clockwise"></i> Compare Other Images
+        </a>
+        <a href="{% url 'analysis:comparison_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-list"></i> All Comparisons
+        </a>
+    </div>
+
+    <!-- How it Works -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h4 class="text-center mb-4">About This Comparison</h4>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-search text-primary info-icon"></i>
+                    <h5 class="mt-3">Pixel-by-Pixel Analysis</h5>
+                    <p class="text-muted">Images are compared at the pixel level to identify exact differences in color values and positioning.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-eye text-success info-icon"></i>
+                    <h5 class="mt-3">Visual Difference Map</h5>
+                    <p class="text-muted">A difference image is generated highlighting areas where the two images differ visually.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-graph-up text-warning info-icon"></i>
+                    <h5 class="mt-3">Similarity Scoring</h5>
+                    <p class="text-muted">Advanced algorithms calculate an overall similarity percentage between the images.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.analysis-image {
+    border: 2px solid #dee2e6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.analysis-image:hover {
+    border-color: #007bff;
+    transform: scale(1.02);
+    transition: all 0.3s ease;
+}
+
+.success-icon {
+    font-size: 3rem;
+}
+
+.info-icon {
+    font-size: 2rem;
+}
+
+.similarity-progress {
+    height: 25px;
+}
+
+.color-progress {
+    height: 20px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set dynamic widths for progress bars using data attributes
+    const progressBars = document.querySelectorAll('.progress-bar[data-width]');
+    progressBars.forEach(function(bar) {
+        const width = bar.getAttribute('data-width');
+        bar.style.width = width + '%';
+    });
+});
+</script>
+{% endblock %}
