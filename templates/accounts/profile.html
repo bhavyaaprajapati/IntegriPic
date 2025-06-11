@@ -20,15 +20,15 @@
 
             <div class="row text-center">
                 <div class="col-12 mb-3">
-                    <h5 class="text-primary">{{ profile.total_uploads }}</h5>
+                    <h5 class="text-primary">{{ total_uploads }}</h5>
                     <small class="text-muted">Total Uploads</small>
                 </div>
                 <div class="col-6">
-                    <h5 class="text-success">{{ profile.total_analyses }}</h5>
+                    <h5 class="text-success">{{ total_analyses }}</h5>
                     <small class="text-muted">Analyses</small>
                 </div>
                 <div class="col-6">
-                    <h5 class="text-warning">{{ profile.total_comparisons }}</h5>
+                    <h5 class="text-warning">{{ total_comparisons }}</h5>
                     <small class="text-muted">Comparisons</small>
                 </div>
             </div>
@@ -70,8 +70,12 @@
                                     <span class="badge bg-secondary">Disabled</span>
                                 {% endif %}
                             </p>
-                            <p><strong>Analysis Quality:</strong> 
-                                <span class="badge bg-info">{{ profile.get_preferred_analysis_quality_display }}</span>
+                            <p><strong>Analysis History:</strong> 
+                                {% if profile.analysis_history_visible %}
+                                    <span class="badge bg-success">Visible</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Hidden</span>
+                                {% endif %}
                             </p>
                         </div>
                     </div>
@@ -84,7 +88,13 @@
                 </div>
                 <div class="card-body">
                     <p><strong>Last Login:</strong> {{ user.last_login|date:"F j, Y g:i A"|default:"Never" }}</p>
-                    <p><strong>Last Upload:</strong> {{ profile.last_upload_date|date:"F j, Y g:i A"|default:"No uploads yet" }}</p>
+                    <p><strong>Last Analysis:</strong> 
+                        {% if recent_analyses %}
+                            {{ recent_analyses.0.created_at|date:"F j, Y g:i A" }}
+                        {% else %}
+                            No analyses yet
+                        {% endif %}
+                    </p>
                     <p><strong>Account Status:</strong> 
                         {% if user.is_active %}
                             <span class="badge bg-success">Active</span>

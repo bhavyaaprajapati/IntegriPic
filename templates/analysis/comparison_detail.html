@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load math_filters %}
 
 {% block title %}Comparison Results - IntegriPic{% endblock %}
 
@@ -265,6 +266,307 @@
                                     </div>
                                 </div>
                             </div>
+                        {% endif %}
+                        
+                        <!-- Enhanced Image Properties Section -->
+                        {% if comparison.comparison_results.image1_properties or comparison.comparison_results.image2_properties %}
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <h6><i class="bi bi-camera"></i> Enhanced Image Analysis</h6>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <!-- Image 1 Properties -->
+                                {% if comparison.comparison_results.image1_properties %}
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header bg-primary text-white">
+                                            <h6 class="mb-0"><i class="bi bi-image"></i> {{ comparison.image1_filename }}</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% with props=comparison.comparison_results.image1_properties %}
+                                            
+                                            <!-- Basic Metrics -->
+                                            <h6>Image Quality Metrics</h6>
+                                            <table class="table table-sm">
+                                                <tr>
+                                                    <td>Brightness:</td>
+                                                    <td><strong>{{ props.brightness|floatformat:1|default:"N/A" }}</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Sharpness:</td>
+                                                    <td><strong>{{ props.sharpness|floatformat:1|default:"N/A" }}</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Contrast:</td>
+                                                    <td><strong>{{ props.contrast|floatformat:1|default:"N/A" }}</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Color Temperature:</td>
+                                                    <td><strong>{{ props.color_temperature|default:"Unknown" }}</strong></td>
+                                                </tr>
+                                            </table>
+                                            
+                                            <!-- Device Information -->
+                                            {% if props.exif_data %}
+                                            <h6 class="mt-3">Device Information</h6>
+                                            <table class="table table-sm">
+                                                {% if props.exif_data.camera_make and props.exif_data.camera_make != "Unknown" %}
+                                                <tr>
+                                                    <td>Camera Make:</td>
+                                                    <td><strong>{{ props.exif_data.camera_make }}</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if props.exif_data.camera_model and props.exif_data.camera_model != "Unknown" %}
+                                                <tr>
+                                                    <td>Camera Model:</td>
+                                                    <td><strong>{{ props.exif_data.camera_model }}</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if props.exif_data.software and props.exif_data.software != "Unknown" %}
+                                                <tr>
+                                                    <td>Software:</td>
+                                                    <td><strong>{{ props.exif_data.software }}</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if props.exif_data.datetime and props.exif_data.datetime != "Unknown" %}
+                                                <tr>
+                                                    <td>Date/Time:</td>
+                                                    <td><strong>{{ props.exif_data.datetime }}</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                            </table>
+                                            {% endif %}
+                                            
+                                            <!-- GPS Information -->
+                                            {% if props.exif_data.gps_info and props.exif_data.gps_info.latitude %}
+                                            <h6 class="mt-3">Location Information</h6>
+                                            <div class="alert alert-info">
+                                                <i class="bi bi-geo-alt"></i> <strong>GPS Coordinates Found</strong><br>
+                                                <small>
+                                                    Latitude: {{ props.exif_data.gps_info.latitude|floatformat:6 }}<br>
+                                                    Longitude: {{ props.exif_data.gps_info.longitude|floatformat:6 }}
+                                                    {% if props.exif_data.gps_info.altitude %}
+                                                    <br>Altitude: {{ props.exif_data.gps_info.altitude|floatformat:2 }}m
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                            {% elif props.exif_data.gps_info and props.exif_data.gps_info.status %}
+                                            <h6 class="mt-3">Location Information</h6>
+                                            <div class="alert alert-secondary">
+                                                <i class="bi bi-geo-alt"></i> {{ props.exif_data.gps_info.status }}
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <!-- Camera Settings -->
+                                            {% if props.exif_data %}
+                                            <h6 class="mt-3">Camera Settings</h6>
+                                            <table class="table table-sm">
+                                                {% if props.exif_data.f_number and props.exif_data.f_number != "Unknown" %}
+                                                <tr>
+                                                    <td>F-Number:</td>
+                                                    <td><strong>f/{{ props.exif_data.f_number }}</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if props.exif_data.exposure_time and props.exif_data.exposure_time != "Unknown" %}
+                                                <tr>
+                                                    <td>Exposure Time:</td>
+                                                    <td><strong>{{ props.exif_data.exposure_time }}s</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if props.exif_data.iso_speed and props.exif_data.iso_speed != "Unknown" %}
+                                                <tr>
+                                                    <td>ISO Speed:</td>
+                                                    <td><strong>{{ props.exif_data.iso_speed }}</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if props.exif_data.focal_length and props.exif_data.focal_length != "Unknown" %}
+                                                <tr>
+                                                    <td>Focal Length:</td>
+                                                    <td><strong>{{ props.exif_data.focal_length }}mm</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                            </table>
+                                            {% endif %}
+                                            
+                                            {% endwith %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Image 2 Properties -->
+                                {% if comparison.comparison_results.image2_properties %}
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header bg-success text-white">
+                                            <h6 class="mb-0"><i class="bi bi-image"></i> {{ comparison.image2_filename }}</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% with props=comparison.comparison_results.image2_properties %}
+                                            
+                                            <!-- Basic Metrics -->
+                                            <h6>Image Quality Metrics</h6>
+                                            <table class="table table-sm">
+                                                <tr>
+                                                    <td>Brightness:</td>
+                                                    <td><strong>{{ props.brightness|floatformat:1|default:"N/A" }}</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Sharpness:</td>
+                                                    <td><strong>{{ props.sharpness|floatformat:1|default:"N/A" }}</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Contrast:</td>
+                                                    <td><strong>{{ props.contrast|floatformat:1|default:"N/A" }}</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Color Temperature:</td>
+                                                    <td><strong>{{ props.color_temperature|default:"Unknown" }}</strong></td>
+                                                </tr>
+                                            </table>
+                                            
+                                            <!-- Device Information -->
+                                            {% if props.exif_data %}
+                                            <h6 class="mt-3">Device Information</h6>
+                                            <table class="table table-sm">
+                                                {% if props.exif_data.camera_make and props.exif_data.camera_make != "Unknown" %}
+                                                <tr>
+                                                    <td>Camera Make:</td>
+                                                    <td><strong>{{ props.exif_data.camera_make }}</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if props.exif_data.camera_model and props.exif_data.camera_model != "Unknown" %}
+                                                <tr>
+                                                    <td>Camera Model:</td>
+                                                    <td><strong>{{ props.exif_data.camera_model }}</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if props.exif_data.software and props.exif_data.software != "Unknown" %}
+                                                <tr>
+                                                    <td>Software:</td>
+                                                    <td><strong>{{ props.exif_data.software }}</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if props.exif_data.datetime and props.exif_data.datetime != "Unknown" %}
+                                                <tr>
+                                                    <td>Date/Time:</td>
+                                                    <td><strong>{{ props.exif_data.datetime }}</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                            </table>
+                                            {% endif %}
+                                            
+                                            <!-- GPS Information -->
+                                            {% if props.exif_data.gps_info and props.exif_data.gps_info.latitude %}
+                                            <h6 class="mt-3">Location Information</h6>
+                                            <div class="alert alert-info">
+                                                <i class="bi bi-geo-alt"></i> <strong>GPS Coordinates Found</strong><br>
+                                                <small>
+                                                    Latitude: {{ props.exif_data.gps_info.latitude|floatformat:6 }}<br>
+                                                    Longitude: {{ props.exif_data.gps_info.longitude|floatformat:6 }}
+                                                    {% if props.exif_data.gps_info.altitude %}
+                                                    <br>Altitude: {{ props.exif_data.gps_info.altitude|floatformat:2 }}m
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                            {% elif props.exif_data.gps_info and props.exif_data.gps_info.status %}
+                                            <h6 class="mt-3">Location Information</h6>
+                                            <div class="alert alert-secondary">
+                                                <i class="bi bi-geo-alt"></i> {{ props.exif_data.gps_info.status }}
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <!-- Camera Settings -->
+                                            {% if props.exif_data %}
+                                            <h6 class="mt-3">Camera Settings</h6>
+                                            <table class="table table-sm">
+                                                {% if props.exif_data.f_number and props.exif_data.f_number != "Unknown" %}
+                                                <tr>
+                                                    <td>F-Number:</td>
+                                                    <td><strong>f/{{ props.exif_data.f_number }}</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if props.exif_data.exposure_time and props.exif_data.exposure_time != "Unknown" %}
+                                                <tr>
+                                                    <td>Exposure Time:</td>
+                                                    <td><strong>{{ props.exif_data.exposure_time }}s</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if props.exif_data.iso_speed and props.exif_data.iso_speed != "Unknown" %}
+                                                <tr>
+                                                    <td>ISO Speed:</td>
+                                                    <td><strong>{{ props.exif_data.iso_speed }}</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                                {% if props.exif_data.focal_length and props.exif_data.focal_length != "Unknown" %}
+                                                <tr>
+                                                    <td>Focal Length:</td>
+                                                    <td><strong>{{ props.exif_data.focal_length }}mm</strong></td>
+                                                </tr>
+                                                {% endif %}
+                                            </table>
+                                            {% endif %}
+                                            
+                                            {% endwith %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Comparison Summary for Enhanced Features -->
+                            {% if comparison.comparison_results.image1_properties and comparison.comparison_results.image2_properties %}
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header bg-warning text-dark">
+                                            <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Enhanced Comparison Summary</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h6>Quality Differences</h6>
+                                                    <table class="table table-sm">
+                                                        <tr>
+                                                            <td>Brightness Difference:</td>
+                                                            <td><strong>{% if comparison.comparison_results.image1_properties.brightness and comparison.comparison_results.image2_properties.brightness %}{{ comparison.comparison_results.image1_properties.brightness|sub:comparison.comparison_results.image2_properties.brightness|floatformat:1 }}{% else %}N/A{% endif %}</strong></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Sharpness Difference:</td>
+                                                            <td><strong>{% if comparison.comparison_results.image1_properties.sharpness and comparison.comparison_results.image2_properties.sharpness %}{{ comparison.comparison_results.image1_properties.sharpness|sub:comparison.comparison_results.image2_properties.sharpness|floatformat:1 }}{% else %}N/A{% endif %}</strong></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Contrast Difference:</td>
+                                                            <td><strong>{% if comparison.comparison_results.image1_properties.contrast and comparison.comparison_results.image2_properties.contrast %}{{ comparison.comparison_results.image1_properties.contrast|sub:comparison.comparison_results.image2_properties.contrast|floatformat:1 }}{% else %}N/A{% endif %}</strong></td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6>Device Comparison</h6>
+                                                    {% if comparison.comparison_results.image1_properties.exif_data.camera_make == comparison.comparison_results.image2_properties.exif_data.camera_make %}
+                                                        <div class="alert alert-success">
+                                                            <i class="bi bi-check-circle"></i> Same camera make detected
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="alert alert-warning">
+                                                            <i class="bi bi-exclamation-triangle"></i> Different camera makes detected
+                                                        </div>
+                                                    {% endif %}
+                                                    
+                                                    {% if comparison.comparison_results.image1_properties.exif_data.gps_info.latitude and comparison.comparison_results.image2_properties.exif_data.gps_info.latitude %}
+                                                        <div class="alert alert-info">
+                                                            <i class="bi bi-geo-alt"></i> Both images contain GPS coordinates
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>

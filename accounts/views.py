@@ -6,7 +6,8 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.contrib.auth.views import (
     LoginView, LogoutView, PasswordResetView, PasswordResetConfirmView,
-    PasswordResetCompleteView, PasswordResetDoneView
+    PasswordResetCompleteView, PasswordResetDoneView, PasswordChangeView,
+    PasswordChangeDoneView
 )
 from django.views.generic import CreateView
 from .forms import UserRegistrationForm
@@ -67,25 +68,48 @@ class CustomPasswordResetCompleteView(PasswordResetCompleteView):
     template_name = 'accounts/password_reset_complete.html'
 
 
+class CustomPasswordChangeView(PasswordChangeView):
+    """Custom password change view"""
+    template_name = 'accounts/password_change.html'
+    success_url = reverse_lazy('accounts:password_change_done')
+
+
+class CustomPasswordChangeDoneView(PasswordChangeDoneView):
+    """Custom password change done view"""
+    template_name = 'accounts/password_change_done.html'
+
+
 @login_required
 def profile(request):
     """User profile view"""
-    from analysis.models import UploadedImage, ImageAnalysis, ImageComparison
+    from analysis.models import ImageAnalysis, ImageComparison
+    from .models import UserProfile
+    
+    # Get or create user profile
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
     
     # Get user statistics
-    total_images = UploadedImage.objects.filter(user=request.user).count()
     total_analyses = ImageAnalysis.objects.filter(user=request.user).count()
     total_comparisons = ImageComparison.objects.filter(user=request.user).count()
     
+    # Update profile statistics
+    profile.total_analyses_count = total_analyses
+    profile.total_comparisons_count = total_comparisons
+    profile.save()
+    
     # Get recent activity
-    recent_images = UploadedImage.objects.filter(user=request.user)[:5]
-    recent_analyses = ImageAnalysis.objects.filter(user=request.user)[:5]
+    recent_analyses = ImageAnalysis.objects.filter(user=request.user).order_by('-created_at')[:5]
+    recent_comparisons = ImageComparison.objects.filter(user=request.user).order_by('-created_at')[:3]
+    
+    # Calculate total uploads (analyses + comparisons * 2 since comparisons involve 2 images)
+    total_uploads = total_analyses + (total_comparisons * 2)
     
     context = {
-        'total_images': total_images,
+        'profile': profile,
         'total_analyses': total_analyses,
         'total_comparisons': total_comparisons,
-        'recent_images': recent_images,
+        'total_uploads': total_uploads,
         'recent_analyses': recent_analyses,
+        'recent_comparisons': recent_comparisons,
     }
     return render(request, 'accounts/profile.html', context)

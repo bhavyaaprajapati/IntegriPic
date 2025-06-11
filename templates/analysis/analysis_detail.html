@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load math_filters %}
 
 {% block title %}Analysis Results - IntegriPic{% endblock %}
 
@@ -103,6 +104,137 @@
                                     <strong>{{ key }}:</strong> {{ value|truncatechars:50 }}
                                 </div>
                             {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Enhanced Metadata Analysis -->
+                {% if analysis.metadata %}
+                <div class="row mb-4">
+                    <!-- Device Information -->
+                    {% if analysis.metadata.Make or analysis.metadata.Model or analysis.metadata.Software %}
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="bi bi-camera"></i> Device Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    {% if analysis.metadata.Make %}
+                                    <tr>
+                                        <td>Camera Make:</td>
+                                        <td><strong>{{ analysis.metadata.Make }}</strong></td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if analysis.metadata.Model %}
+                                    <tr>
+                                        <td>Camera Model:</td>
+                                        <td><strong>{{ analysis.metadata.Model }}</strong></td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if analysis.metadata.Software %}
+                                    <tr>
+                                        <td>Software:</td>
+                                        <td><strong>{{ analysis.metadata.Software }}</strong></td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if analysis.metadata.DateTime %}
+                                    <tr>
+                                        <td>Date/Time:</td>
+                                        <td><strong>{{ analysis.metadata.DateTime }}</strong></td>
+                                    </tr>
+                                    {% endif %}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- GPS Information -->
+                    {% if analysis.metadata.GPSInfo %}
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="bi bi-geo-alt"></i> Location Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-exclamation-circle"></i> <strong>GPS Data Found</strong><br>
+                                    <small>This image contains embedded GPS coordinates that reveal the location where it was taken.</small>
+                                </div>
+                                <!-- Note: GPS parsing would need to be done in the view -->
+                                <p class="text-muted">Raw GPS data detected in EXIF. Location extraction available.</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Camera Settings -->
+                    {% if analysis.metadata.FNumber or analysis.metadata.ExposureTime or analysis.metadata.ISOSpeedRatings %}
+                    <div class="col-md-6 mt-3">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0"><i class="bi bi-sliders"></i> Camera Settings</h6>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    {% if analysis.metadata.FNumber %}
+                                    <tr>
+                                        <td>F-Number:</td>
+                                        <td><strong>f/{{ analysis.metadata.FNumber }}</strong></td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if analysis.metadata.ExposureTime %}
+                                    <tr>
+                                        <td>Exposure Time:</td>
+                                        <td><strong>{{ analysis.metadata.ExposureTime }}s</strong></td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if analysis.metadata.ISOSpeedRatings %}
+                                    <tr>
+                                        <td>ISO Speed:</td>
+                                        <td><strong>{{ analysis.metadata.ISOSpeedRatings }}</strong></td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if analysis.metadata.FocalLength %}
+                                    <tr>
+                                        <td>Focal Length:</td>
+                                        <td><strong>{{ analysis.metadata.FocalLength }}mm</strong></td>
+                                    </tr>
+                                    {% endif %}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Image Quality Analysis -->
+                    <div class="col-md-6 mt-3">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0"><i class="bi bi-bar-chart"></i> Image Quality</h6>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td>Dimensions:</td>
+                                        <td><strong>{{ analysis.image_width }}×{{ analysis.image_height }}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td>File Size:</td>
+                                        <td><strong>{{ analysis.file_size_mb }} MB</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Format:</td>
+                                        <td><strong>{{ analysis.image_format }}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Megapixels:</td>
+                                        <td><strong>{% if analysis.image_width and analysis.image_height %}{{ analysis.image_width|mul:analysis.image_height|mul:0.000001|floatformat:"1" }}{% else %}N/A{% endif %} MP</strong></td>
+                                    </tr>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

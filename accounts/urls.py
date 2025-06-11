@@ -9,6 +9,10 @@ urlpatterns = [
     path('register/', views.RegisterView.as_view(), name='register'),
     path('profile/', views.profile, name='profile'),
     
+    # Password change URLs
+    path('password-change/', views.CustomPasswordChangeView.as_view(), name='password_change'),
+    path('password-change/done/', views.CustomPasswordChangeDoneView.as_view(), name='password_change_done'),
+    
     # Password reset URLs
     path('password-reset/', views.CustomPasswordResetView.as_view(), name='password_reset'),
     path('password-reset/done/', views.CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
