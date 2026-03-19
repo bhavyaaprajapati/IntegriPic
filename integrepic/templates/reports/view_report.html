@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ report.report_title }} - IntegriPic{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="main-content">
+                <!-- Report Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="text-primary">
+                        <i class="bi bi-file-earmark-text me-2"></i>
+                        {{ report.report_title }}
+                    </h1>
+                    <div class="text-muted">
+                        <small>Generated on {{ report.created_at|date:"M d, Y H:i" }}</small>
+                    </div>
+                </div>
+
+                {% if report.analysis %}
+                    <!-- Single Image Analysis Report -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h3 class="card-title mb-0">
+                                <i class="bi bi-image me-2"></i>
+                                Image Analysis Report
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="text-secondary mb-3">Basic Information</h5>
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td class="fw-bold">Filename:</td>
+                                            <td>{{ report.analysis.original_filename }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">Format:</td>
+                                            <td>
+                                                <span class="badge bg-info">{{ report.analysis.image_format }}</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">File Size:</td>
+                                            <td>{{ report.analysis.file_size_mb }} MB</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">SHA256 Hash:</td>
+                                            <td><code class="text-muted">{{ report.analysis.sha256_hash|truncatechars:16 }}...</code></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">Upload Date:</td>
+                                            <td>{{ report.analysis.created_at|date:"M d, Y H:i" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">Status:</td>
+                                            <td>
+                                                <span class="badge {% if report.analysis.status == 'completed' %}bg-success{% else %}bg-warning{% endif %}">
+                                                    {{ report.analysis.get_status_display }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="text-secondary mb-3">Analysis Results</h5>
+                                    
+                                    <!-- Steganography Analysis -->
+                                    {% if report.analysis.steganography_result %}
+                                        <div class="alert alert-info">
+                                            <strong><i class="bi bi-shield-check me-1"></i> Steganography Analysis:</strong><br>
+                                            {{ report.analysis.steganography_result }}
+                                            {% if report.analysis.steganography_message %}
+                                                <br><strong>Hidden Message:</strong>
+                                                <div class="mt-2 p-2 bg-light rounded">
+                                                    <code>{{ report.analysis.steganography_message|truncatechars:200 }}</code>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- ELA Analysis -->
+                                    {% if report.analysis.ela_result %}
+                                        <div class="alert alert-warning">
+                                            <strong><i class="bi bi-graph-up me-1"></i> Error Level Analysis:</strong><br>
+                                            <small class="text-muted">{{ report.analysis.ela_result|truncatechars:150 }}</small>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- System Information -->
+                                    {% if report.analysis.system_info %}
+                                        <div class="text-muted">
+                                            <small><strong>Analysis System:</strong> {{ report.analysis.system_info }}</small>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                {% else %}
+                    <!-- Image Comparison Report -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h3 class="card-title mb-0">
+                                <i class="bi bi-images me-2"></i>
+                                Image Comparison Report
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="text-secondary mb-3">Comparison Details</h5>
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td class="fw-bold">First Image:</td>
+                                            <td>{{ report.comparison.image1_filename }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">Second Image:</td>
+                                            <td>{{ report.comparison.image2_filename }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">Comparison Date:</td>
+                                            <td>{{ report.comparison.created_at|date:"M d, Y H:i" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold">Result:</td>
+                                            <td>
+                                                {% if report.comparison.are_identical %}
+                                                    <span class="badge bg-success">
+                                                        <i class="bi bi-check-circle me-1"></i>Images are identical
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">
+                                                        <i class="bi bi-exclamation-triangle me-1"></i>Images have differences
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="text-secondary mb-3">Analysis Summary</h5>
+                                    <div class="alert {% if report.comparison.are_identical %}alert-success{% else %}alert-warning{% endif %}">
+                                        <p class="mb-0">
+                                            {% if report.comparison.are_identical %}
+                                                <i class="bi bi-check-circle-fill me-2"></i>
+                                                The uploaded images are pixel-perfect matches. No differences detected.
+                                            {% else %}
+                                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                                Differences were detected between the uploaded images. This could indicate modifications, compression artifacts, or different source files.
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Report Actions -->
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'reports:user_reports' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Back to Reports
+                    </a>
+                    <button onclick="window.print()" class="btn btn-primary">
+                        <i class="bi bi-printer me-1"></i>Print Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn, .navbar, .sidebar {
+        display: none !important;
+    }
+    .main-content {
+        box-shadow: none !important;
+        border: none !important;
+    }
+}
+</style>
+{% endblock %}

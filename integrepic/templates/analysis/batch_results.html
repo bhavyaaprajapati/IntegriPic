@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+
+{% block title %}Batch Upload Results - IntegriPic{% endblock %}
+
+
+{% block content %}
+<div class="main-content">
+   <div class="text-center mb-4">
+       <i class="bi bi-collection text-primary" style="font-size: 3rem;"></i>
+       <h2 class="mt-3">Batch Upload Results</h2>
+       <p class="text-muted">
+           {{ analyses|length }} image{{ analyses|length|pluralize }} analyzed &mdash;
+           <span class="text-success">{{ completed }} completed</span>
+           {% if failed %}
+           &middot; <span class="text-danger">{{ failed }} failed</span>
+           {% endif %}
+       </p>
+   </div>
+
+
+   {% if analyses %}
+       <div class="row">
+           {% for analysis in analyses %}
+               <div class="col-md-6 col-lg-4 mb-4">
+                   <div class="card h-100">
+                       <div class="card-body">
+                           <h6 class="card-title">{{ analysis.original_filename|truncatechars:30 }}</h6>
+                           <p class="text-muted mb-2">
+                               <small>
+                                   Status:
+                                   {% if analysis.status == 'completed' %}
+                                       <span class="badge bg-success">{{ analysis.get_status_display }}</span>
+                                   {% elif analysis.status == 'failed' %}
+                                       <span class="badge bg-danger">{{ analysis.get_status_display }}</span>
+                                   {% elif analysis.status == 'processing' %}
+                                       <span class="badge bg-warning">{{ analysis.get_status_display }}</span>
+                                   {% else %}
+                                       <span class="badge bg-secondary">{{ analysis.get_status_display }}</span>
+                                   {% endif %}
+                               </small>
+                           </p>
+                           <p class="text-muted mb-2">
+                               <small>{{ analysis.image_format }} | {{ analysis.file_size_mb }} MB</small>
+                           </p>
+                           <p class="text-muted mb-3">
+                               <small>{{ analysis.created_at|date:"M d, Y H:i" }}</small>
+                           </p>
+                           <div class="d-grid">
+                               <a href="{% url 'analysis:analysis_detail' analysis.id %}" class="btn btn-outline-primary btn-sm">
+                                   <i class="bi bi-eye"></i> View Results
+                               </a>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+           {% endfor %}
+       </div>
+   {% endif %}
+
+
+   <div class="text-center mt-4 d-flex justify-content-center gap-3">
+       <a href="{% url 'analysis:upload' %}" class="btn btn-primary">
+           <i class="bi bi-cloud-upload"></i> Upload More Images
+       </a>
+       <a href="{% url 'analysis:analysis_list' %}" class="btn btn-outline-secondary">
+           <i class="bi bi-list-check"></i> All Analyses
+       </a>
+   </div>
+</div>
+{% endblock %}

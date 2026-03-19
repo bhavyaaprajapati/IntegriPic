@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}My Images - IntegriPic{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-images"></i> My Images</h2>
+            <p class="text-muted">{{ images|length }} image{% if images|length != 1 %}s{% endif %} uploaded</p>
+        </div>
+        <a href="{% url 'analysis:upload' %}" class="btn btn-primary">
+            <i class="bi bi-cloud-upload"></i> Upload New Image
+        </a>
+    </div>
+
+    {% if images %}
+        <!-- Filter and Sort Options -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search images by filename...">
+                </div>
+            </div>
+            <div class="col-md-6">
+                <select class="form-select" id="sortSelect">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="name">Name A-Z</option>
+                    <option value="size">File Size</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Images Grid -->
+        <div class="row" id="imagesGrid">
+            {% for image in images %}
+                <div class="col-md-6 col-lg-4 mb-4 image-item" data-filename="{{ image.filename|lower }}" data-date="{{ image.uploaded_at.isoformat }}" data-size="{{ image.file_size }}">
+                    <div class="card h-100">
+                        <div class="position-relative">
+                            <img src="{{ image.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ image.filename }}">
+                            <div class="position-absolute top-0 end-0 m-2">
+                                {% if image.analyses.exists %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Analyzed
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning">
+                                        <i class="bi bi-clock"></i> Pending
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="card-body">
+                            <h6 class="card-title" title="{{ image.filename }}">
+                                {{ image.filename|truncatechars:25 }}
+                            </h6>
+                            
+                            <div class="row text-center small text-muted mb-3">
+                                <div class="col-6">
+                                    <i class="bi bi-calendar"></i><br>
+                                    {{ image.uploaded_at|date:"M j, Y" }}
+                                </div>
+                                <div class="col-6">
+                                    <i class="bi bi-file-earmark"></i><br>
+                                    {{ image.file_size|filesizeformat }}
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'analysis:image_detail' image.id %}" class="btn btn-primary btn-sm flex-fill">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                                {% if not image.analyses.exists %}
+                                    <a href="{% url 'analysis:analyze_image' image.id %}" class="btn btn-success btn-sm flex-fill">
+                                        <i class="bi bi-search"></i> Analyze
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer bg-transparent">
+                            <div class="row text-center small">
+                                <div class="col-4">
+                                    <span class="badge bg-light text-dark">
+                                        <i class="bi bi-search"></i> {{ image.analyses.count }}
+                                    </span>
+                                    <br><small class="text-muted">Analyses</small>
+                                </div>
+                                <div class="col-4">
+                                    <span class="badge bg-light text-dark">
+                                        <i class="bi bi-aspect-ratio"></i> {{ image.comparisons_as_image1.count|add:image.comparisons_as_image2.count }}
+                                    </span>
+                                    <br><small class="text-muted">Comparisons</small>
+                                </div>
+                                <div class="col-4">
+                                    <span class="badge bg-light text-dark">
+                                        <i class="bi bi-file-text"></i> {{ image.analysis_reports.count }}
+                                    </span>
+                                    <br><small class="text-muted">Reports</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- No Results Message -->
+        <div id="noResults" class="text-center py-5" style="display: none;">
+            <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+            <h4 class="mt-3 text-muted">No images found</h4>
+            <p class="text-muted">Try adjusting your search criteria</p>
+        </div>
+
+    {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-5">
+            <i class="bi bi-images text-muted" style="font-size: 4rem;"></i>
+            <h3 class="mt-3 text-muted">No Images Yet</h3>
+            <p class="text-muted">Upload your first image to start analyzing</p>
+            <a href="{% url 'analysis:upload' %}" class="btn btn-primary">
+                <i class="bi bi-cloud-upload"></i> Upload Image
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Search functionality
+document.getElementById('searchInput').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const items = document.querySelectorAll('.image-item');
+    let visibleCount = 0;
+    
+    items.forEach(item => {
+        const filename = item.dataset.filename;
+        if (filename.includes(searchTerm)) {
+            item.style.display = 'block';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+});
+
+// Sort functionality
+document.getElementById('sortSelect').addEventListener('change', function() {
+    const sortBy = this.value;
+    const grid = document.getElementById('imagesGrid');
+    const items = Array.from(document.querySelectorAll('.image-item'));
+    
+    items.sort((a, b) => {
+        switch(sortBy) {
+            case 'newest':
+                return new Date(b.dataset.date) - new Date(a.dataset.date);
+            case 'oldest':
+                return new Date(a.dataset.date) - new Date(b.dataset.date);
+            case 'name':
+                return a.dataset.filename.localeCompare(b.dataset.filename);
+            case 'size':
+                return parseInt(b.dataset.size) - parseInt(a.dataset.size);
+            default:
+                return 0;
+        }
+    });
+    
+    // Reorder items in DOM
+    items.forEach(item => grid.appendChild(item));
+});
+</script>
+{% endblock %}

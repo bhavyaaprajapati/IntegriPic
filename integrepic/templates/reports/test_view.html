@@ -1,0 +1,14 @@
+<!-- Test template -->
+{% extends 'base.html' %}
+
+{% block title %}TEST{% endblock %}
+
+{% block content %}
+<h1>TEST CONTENT</h1>
+<p>Report: {{ report.report_title }}</p>
+{% if report.analysis %}
+    <p>Analysis filename: {{ report.analysis.original_filename }}</p>
+{% else %}
+    <p>No analysis found</p>
+{% endif %}
+{% endblock %}
