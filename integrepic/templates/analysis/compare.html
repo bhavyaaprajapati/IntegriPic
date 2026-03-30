@@ -3,245 +3,212 @@
 
 {% block title %}Compare Images - IntegriPic{% endblock %}
 
-{% block content %}
-<div class="main-content">
-    <div class="text-center mb-4">
-        <i class="bi bi-aspect-ratio text-primary" style="font-size: 3rem;"></i>
-        <h2 class="mt-3">Compare Images</h2>
-        <p class="text-muted">Select two images to compare and find differences between them</p>
-    </div>
+{% block extra_css %}
+<style>
+    .target-panel {
+        padding: 2rem;
+        background: rgba(128,128,128,0.05);
+        border-radius: 12px;
+        border: 1px solid rgba(128,128,128,0.1);
+    }
+    .preview-box {
+        width: 100%;
+        height: 200px;
+        background: rgba(128,128,128,0.1);
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        border: 1px dashed rgba(128,128,128,0.3);
+        overflow: hidden;
+    }
+    .preview-box img {
+        max-width: 100%; max-height: 100%; object-fit: contain;
+    }
+</style>
+{% endblock %}
 
+{% block content %}
+<div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+    <i class="bi bi-intersect fs-2 text-primary me-3"></i>
+    <div>
+        <h2 class="fw-bold mb-1 text-body">Forensic Comparison</h2>
+        <p class="mb-0 text-muted">Execute a pixel-perfect cryptographic variance check between two target assets.</p>
+    </div>
+</div>
+
+<div class="card p-4 mb-5 shadow-sm border-0">
     <form method="post" enctype="multipart/form-data" id="compareForm">
         {% csrf_token %}
-        <div class="row">
+        <div class="row g-4 mb-4">
+            <!-- Source A -->
             <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="bi bi-image"></i> First Image</h5>
+                <div class="target-panel h-100 shadow-sm bg-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-primary me-2">TARGET A</span>
+                        <h6 class="fw-bold text-body mb-0">Original Base Asset</h6>
                     </div>
-                    <div class="card-body">
-                        {{ form.image1|as_crispy_field }}
-                        <div id="preview1" class="mt-3 text-center" style="display: none;">
-                            <img id="img1" class="img-fluid" style="max-height: 200px; border-radius: 8px;">
-                            <p id="info1" class="text-muted mt-2"></p>
+                    {{ form.image1|as_crispy_field }}
+                    <div class="preview-box mt-3" id="previewBox1">
+                        <i class="bi bi-image text-muted" style="font-size: 3rem; opacity: 0.5;" id="icon1"></i>
+                        <img id="img1" style="display: none;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Source B -->
+            <div class="col-md-6">
+                <div class="target-panel h-100 shadow-sm bg-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-success me-2">TARGET B</span>
+                        <h6 class="fw-bold text-body mb-0">Subject Variable</h6>
+                    </div>
+                    {{ form.image2|as_crispy_field }}
+                    <div class="preview-box mt-3" id="previewBox2">
+                        <i class="bi bi-images text-muted" style="font-size: 3rem; opacity: 0.5;" id="icon2"></i>
+                        <img id="img2" style="display: none;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-end border-top pt-4">
+            <button type="submit" class="btn btn-primary px-5 fw-medium shadow-sm" id="compareBtn" disabled>
+                <i class="bi bi-cpu me-2"></i> Launch Matrix Analysis
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Output renders from comparison_detail.html on redirect usually. Wait, if validation fails or minor comparison inline? 
+    The original template had inline comparison output. Let's wrap it in standard semantic classes too. -->
+{% if comparison %}
+<div class="card border-0 mb-5 shadow-sm">
+    <div class="card-header border-0 bg-transparent pt-4 pb-2 px-4">
+        <h4 class="fw-bold mb-0 text-body d-flex align-items-center gap-2">
+            <i class="bi bi-check2-square text-success"></i> Output Report Matrix
+        </h4>
+    </div>
+    
+    <div class="card-body p-4">
+        <div class="row g-4 mb-5">
+            <div class="col-md-4 text-center">
+                <div class="badge bg-secondary mb-2">TARGET A</div>
+                <div class="p-2 border rounded-3 bg-body shadow-sm">
+                    <img src="{{ comparison.image1.image.url }}" class="img-fluid rounded" style="max-height: 200px;">
+                </div>
+                <div class="mt-2 text-muted small text-truncate px-3">{{ comparison.image1.filename }}</div>
+            </div>
+            
+            <div class="col-md-4 text-center">
+                <div class="badge bg-danger mb-2">DIFFERENCE HEATMAP</div>
+                <div class="position-relative">
+                    {% if comparison.difference_image %}
+                        <div class="p-2 border border-danger rounded-3" style="background: rgba(239, 68, 68, 0.1);">
+                            <img src="{{ comparison.difference_image.url }}" class="img-fluid rounded" style="max-height: 200px;">
                         </div>
-                    </div>
+                    {% else %}
+                        <div class="p-5 border border-success rounded-3 h-100 d-flex flex-column align-items-center justify-content-center bg-success bg-opacity-10">
+                            <i class="bi bi-shield-check text-success fs-1 mb-2"></i>
+                            <div class="fw-bold text-success">Perfect Hash Match</div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
             
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="bi bi-image"></i> Second Image</h5>
-                    </div>
-                    <div class="card-body">
-                        {{ form.image2|as_crispy_field }}
-                        <div id="preview2" class="mt-3 text-center" style="display: none;">
-                            <img id="img2" class="img-fluid" style="max-height: 200px; border-radius: 8px;">
-                            <p id="info2" class="text-muted mt-2"></p>
-                        </div>
-                    </div>
+            <div class="col-md-4 text-center">
+                <div class="badge bg-success mb-2">TARGET B</div>
+                <div class="p-2 border rounded-3 bg-body shadow-sm">
+                    <img src="{{ comparison.image2.image.url }}" class="img-fluid rounded" style="max-height: 200px;">
                 </div>
+                <div class="mt-2 text-muted small text-truncate px-3">{{ comparison.image2.filename }}</div>
             </div>
         </div>
 
-        <div class="text-center mt-4">
-            <div class="d-grid gap-2 col-md-6 mx-auto mt-4">
-                <button type="submit" class="btn btn-primary btn-lg" id="compareBtn" disabled>
-                    <i class="bi bi-aspect-ratio"></i> Compare Images
-                </button>
+        <div class="p-4 rounded-3 border mb-4 shadow-sm bg-body">
+            <div class="d-flex justify-content-between align-items-end mb-2">
+                <h6 class="fw-bold text-body mb-0 text-uppercase" style="letter-spacing: 1px;">Structural Similarity Parity (SSIM)</h6>
+                <div class="fw-bolder fs-4" style="color: {% if comparison.similarity_score >= 80 %}#10b981{% elif comparison.similarity_score >= 60 %}#f59e0b{% else %}#ef4444{% endif %}; line-height: 1;">
+                    {{ comparison.similarity_score }}%
+                </div>
+            </div>
+            <div class="progress bg-secondary bg-opacity-25 border" style="height: 12px; border-radius: 6px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated {% if comparison.similarity_score >= 80 %}bg-success{% elif comparison.similarity_score >= 60 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ comparison.similarity_score }}%;"></div>
             </div>
         </div>
-    </form>
 
-    {% if comparison %}
-        <hr class="my-5">
-        
-        <!-- Comparison Results -->
-        <div class="card">
-            <div class="card-header">
-                <h4><i class="bi bi-check-circle text-success"></i> Comparison Results</h4>
+        {% if comparison.comparison_details %}
+            <div class="alert alert-info py-3 border-0 border-start border-4 border-info rounded-3 mb-4 shadow-sm bg-opacity-10">
+                <span class="text-body fw-medium">{{ comparison.comparison_details }}</span>
             </div>
-            <div class="card-body">
-                <div class="row mb-4">
-                    <div class="col-md-4 text-center">
-                        <h6>First Image</h6>
-                        <img src="{{ comparison.image1.image.url }}" class="img-fluid analysis-image mb-2" style="max-height: 200px;">
-                        <p class="small text-muted">{{ comparison.image1.filename }}</p>
-                    </div>
-                    <div class="col-md-4 text-center">
-                        <h6>Difference Map</h6>
-                        {% if comparison.difference_image %}
-                            <img src="{{ comparison.difference_image.url }}" class="img-fluid analysis-image mb-2" style="max-height: 200px;">
-                            <p class="small text-muted">Highlighted Differences</p>
-                        {% else %}
-                            <div class="alert alert-info">
-                                <i class="bi bi-info-circle"></i>
-                                No visual differences detected
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-4 text-center">
-                        <h6>Second Image</h6>
-                        <img src="{{ comparison.image2.image.url }}" class="img-fluid analysis-image mb-2" style="max-height: 200px;">
-                        <p class="small text-muted">{{ comparison.image2.filename }}</p>
-                    </div>
-                </div>
+        {% endif %}
 
-                <!-- Similarity Score -->
-                <div class="row mb-4">
-                    <div class="col-md-12 text-center">
-                        <h5>Similarity Score</h5>
-                        <div class="progress" style="height: 30px;">
-                            <div class="progress-bar {% if comparison.similarity_score >= 80 %}bg-success{% elif comparison.similarity_score >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
-                                 style="width: {{ comparison.similarity_score }}%">
-                                {{ comparison.similarity_score }}%
-                            </div>
-                        </div>
-                        <p class="mt-2 text-muted">
-                            {% if comparison.similarity_score >= 90 %}
-                                Images are nearly identical
-                            {% elif comparison.similarity_score >= 70 %}
-                                Images are very similar
-                            {% elif comparison.similarity_score >= 50 %}
-                                Images have moderate similarity
-                            {% else %}
-                                Images are quite different
-                            {% endif %}
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Comparison Details -->
-                {% if comparison.comparison_details %}
-                    <div class="alert alert-info">
-                        <h6><i class="bi bi-info-circle"></i> Analysis Summary</h6>
-                        {{ comparison.comparison_details }}
-                    </div>
-                {% endif %}
-
-                <!-- Actions -->
-                <div class="text-center mt-4">
-                    <a href="{% url 'reports:generate_comparison_report' comparison.id %}" class="btn btn-success">
-                        <i class="bi bi-file-earmark-text"></i> Generate Report
-                    </a>
-                    <a href="{% url 'analysis:compare' %}" class="btn btn-outline-primary">
-                        <i class="bi bi-arrow-clockwise"></i> Compare Other Images
-                    </a>
-                </div>
-            </div>
-        </div>
-    {% endif %}
-
-    <!-- How it Works -->
-    <div class="row mt-5">
-        <div class="col-12">
-            <h4 class="text-center mb-4">How Image Comparison Works</h4>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="bi bi-search text-primary" style="font-size: 2rem;"></i>
-                    <h5 class="mt-3">Pixel Analysis</h5>
-                    <p class="text-muted">We compare images pixel by pixel to identify exact differences in color and intensity.</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="bi bi-graph-up text-success" style="font-size: 2rem;"></i>
-                    <h5 class="mt-3">Similarity Score</h5>
-                    <p class="text-muted">Calculate a percentage score showing how similar the two images are overall.</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="bi bi-eye text-warning" style="font-size: 2rem;"></i>
-                    <h5 class="mt-3">Visual Differences</h5>
-                    <p class="text-muted">Generate a difference map highlighting areas where the images differ.</p>
-                </div>
-            </div>
+        <div class="d-flex justify-content-end flex-wrap gap-3 pt-3">
+            <a href="{% url 'reports:generate_comparison_report' comparison.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Document Log
+            </a>
+            <a href="{% url 'analysis:compare' %}" class="btn btn-primary">
+                <i class="bi bi-arrow-clockwise me-1"></i> Reset Sandbox
+            </a>
         </div>
     </div>
 </div>
+{% endif %}
 
-<!-- Loading Modal -->
-<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+<!-- Diagnostic Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-body text-center py-4">
-                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
-                <h5>Comparing images...</h5>
-                <p class="text-muted mb-0">This may take a few moments depending on the image sizes.</p>
+        <div class="modal-content border-0 bg-dark shadow-lg">
+            <div class="modal-body text-center p-5 position-relative overflow-hidden rounded-3">
+                <div class="position-absolute w-100" style="top:0; left:0; height:2px; background: linear-gradient(90deg, transparent, var(--primary-blue), transparent); animation: scanning 1.5s infinite;"></div>
+                <div class="spinner-border text-primary mb-4" style="width: 3rem; height: 3rem;"></div>
+                <h5 class="fw-bold text-white mb-2">Processing Matrix Deltas...</h5>
+                <p class="text-muted small mb-0">Cross-referencing topological structures.</p>
             </div>
         </div>
     </div>
 </div>
+<style>@keyframes scanning { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Image preview functionality for file inputs
-function updatePreview(inputId, previewId, imgId, infoId) {
+function bindPreview(inputId, imgId, iconId) {
     const input = document.getElementById(inputId);
-    const preview = document.getElementById(previewId);
     const img = document.getElementById(imgId);
-    const info = document.getElementById(infoId);
-    
-    if (input.files && input.files[0]) {
-        const file = input.files[0];
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            img.src = e.target.result;
-            info.textContent = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
-            preview.style.display = 'block';
-            checkFormComplete();
-        };
-        
-        reader.readAsDataURL(file);
-    } else {
-        preview.style.display = 'none';
-        checkFormComplete();
+    const icon = document.getElementById(iconId);
+
+    if(input && img && icon) {
+        input.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                    icon.style.display = 'none';
+                    checkFormComplete();
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
     }
 }
 
 function checkFormComplete() {
-    const image1 = document.getElementById('id_image1');
-    const image2 = document.getElementById('id_image2');
+    const i1 = document.getElementById('id_image1');
+    const i2 = document.getElementById('id_image2');
     const btn = document.getElementById('compareBtn');
-    
-    if (image1.files && image1.files[0] && image2.files && image2.files[0]) {
-        btn.disabled = false;
-    } else {
-        btn.disabled = true;
+    if(i1 && i2 && btn) {
+        btn.disabled = !(i1.files.length && i2.files.length);
     }
 }
 
-// Event listeners
-document.getElementById('id_image1').addEventListener('change', function() {
-    updatePreview('id_image1', 'preview1', 'img1', 'info1');
-});
+bindPreview('id_image1', 'img1', 'icon1');
+bindPreview('id_image2', 'img2', 'icon2');
 
-document.getElementById('id_image2').addEventListener('change', function() {
-    updatePreview('id_image2', 'preview2', 'img2', 'info2');
-});
-
-document.getElementById('compareForm').addEventListener('submit', function(e) {
-    const image1 = document.getElementById('id_image1');
-    const image2 = document.getElementById('id_image2');
-    
-    if (!image1.files || !image1.files[0] || !image2.files || !image2.files[0]) {
-        e.preventDefault();
-        alert('Please select both images to compare.');
-        return;
-    }
-    
-    const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
-    modal.show();
-});
+const cf = document.getElementById('compareForm');
+if(cf) {
+    cf.addEventListener('submit', function() {
+        new bootstrap.Modal(document.getElementById('loadingModal')).show();
+    });
+}
 </script>
 {% endblock %}

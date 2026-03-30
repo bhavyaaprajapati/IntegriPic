@@ -16,6 +16,7 @@ import logging
 from .models import ImageAnalysis, ImageComparison
 from .services import ImageAnalysisService, ImageComparisonService
 from .forms import ImageUploadForm, ImageComparisonForm
+from .visualization_service import VisualizationService
 
 
 logger = logging.getLogger(__name__)
@@ -218,11 +219,79 @@ def batch_results(request):
 
 @login_required
 def analysis_detail(request, pk):
-   """Display analysis results"""
+   """Display analysis results with interactive visualizations"""
    analysis = get_object_or_404(ImageAnalysis, pk=pk, user=request.user)
-  
+
+   # Generate visualizations
+   viz_service = VisualizationService()
+
+   charts = {
+       'file_info_chart': viz_service.create_file_info_chart(
+           analysis.file_size,
+           analysis.image_format,
+           analysis.image_width,
+           analysis.image_height
+       ),
+       'properties_chart': viz_service.create_image_properties_chart(
+           analysis.image_width,
+           analysis.image_height,
+           analysis.file_size
+       ),
+       'timeline_chart': viz_service.create_analysis_timeline(
+           analysis.created_at,
+           analysis.updated_at,
+           analysis.analysis_duration
+       ),
+       'metadata_chart': viz_service.create_metadata_summary(analysis.metadata),
+       'ela_chart': viz_service.create_ela_analysis_chart(analysis.ela_results) if analysis.ela_analysis_performed else None,
+       'steganography_chart': viz_service.create_steganography_chart(analysis.steganography_result),
+   }
+
+   # Generate RGB histogram charts (from actual uploaded image path)
+   # For now, we'll skip this since we don't persist uploaded images
+   # In Phase 2, we can add image file storage
+   rgb_charts = {}
+   try:
+       # This will need the actual image path - will be implemented in Phase 2
+       # For now, we'll leave these as None
+       rgb_charts = {
+           'rgb_histogram': None,
+           'color_distribution': None,
+           'color_stats': None,
+       }
+   except Exception as e:
+       logger.error(f"Error generating RGB charts: {e}")
+
+   charts.update(rgb_charts)
+
+   # Generate geolocation charts if GPS metadata is available
+   gps_charts = {}
+   try:
+       if analysis.metadata and 'GPSInfo' in analysis.metadata:
+           gps_charts = {
+               'geolocation_map': viz_service.create_geolocation_map(
+                   analysis.metadata,
+                   analysis.original_filename
+               ),
+               'location_info_card': viz_service.create_location_info_card(analysis.metadata),
+           }
+       else:
+           gps_charts = {
+               'geolocation_map': None,
+               'location_info_card': None,
+           }
+   except Exception as e:
+       logger.error(f"Error generating geolocation charts: {e}")
+       gps_charts = {
+           'geolocation_map': None,
+           'location_info_card': None,
+       }
+
+   charts.update(gps_charts)
+
    context = {
        'analysis': analysis,
+       'charts': charts,
    }
    return render(request, 'analysis/analysis_detail.html', context)
 
@@ -346,10 +415,19 @@ def compare_images(request):
                        messages.error(request, f'Comparison failed: {comparison_result["message"]}')
                       
                finally:
-                   # Clean up temporary files
+                   # Clean up temporary files (with retry for Windows file locking)
                    for temp_file_path in temp_files:
                        if os.path.exists(temp_file_path):
-                           os.unlink(temp_file_path)
+                           try:
+                               os.unlink(temp_file_path)
+                           except OSError:
+                               # File still locked on Windows - let OS clean it up
+                               import gc
+                               gc.collect()  # Force garbage collection to release file handles
+                               try:
+                                   os.unlink(temp_file_path)
+                               except OSError:
+                                   logger.warning(f"Could not delete temp file: {temp_file_path}")
                       
            except Exception as e:
                logger.error(f"Error during comparison: {e}")

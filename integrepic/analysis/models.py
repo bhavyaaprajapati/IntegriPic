@@ -44,6 +44,9 @@ class ImageAnalysis(models.Model):
     # Steganography Analysis
     steganography_result = models.TextField(blank=True, null=True)
     steganography_message = models.TextField(blank=True, null=True)
+
+    # RGB Color Analysis (stored as JSON)
+    rgb_histogram_data = models.JSONField(default=dict, blank=True, help_text="RGB histogram bins for color analysis")
     
     # System Information
     os_info = models.CharField(max_length=100, blank=True)

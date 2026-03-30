@@ -1,238 +1,370 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}IntegriPic - Image Analysis Tool{% endblock %}</title>
+    <title>{% block title %}IntegriPic{% endblock %}</title>
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
-    
-    <!-- Custom CSS -->
     <style>
         :root {
-            --primary-color: #2a5298;
-            --secondary-color: #1e3c72;
-            --accent-color: #f4f6fb;
-            --success-color: #28a745;
-            --warning-color: #ffc107;
-            --danger-color: #dc3545;
+            --sidebar-width: 260px;
+            --primary-blue: #3b82f6;
+            --primary-blue-hover: #2563eb;
         }
 
+        /* Animated Background */
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: var(--accent-color);
-            color: #222;
+            background: linear-gradient(-45deg, #f8fafc, #e2e8f0, #cbd5e1, #bae6fd);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            overflow-x: hidden;
+            margin: 0;
+            transition: background 0.5s ease;
+        }
+        
+        [data-bs-theme="dark"] body {
+            background: linear-gradient(-45deg, #0f172a, #1e293b, #0c1222, #1e3a8a);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
         }
 
-        .navbar-brand {
-            font-weight: bold;
-            color: var(--primary-color) !important;
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
+        /* -------------------------- */
+        /* AUTH LAYOUT (Centered)     */
+        /* -------------------------- */
+        body.auth-layout {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        body.auth-layout::before {
+            content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
+            background: radial-gradient(circle at center, rgba(59,130,246,0.15), transparent 70%);
+            animation: pulse 4s infinite alternate; pointer-events: none; z-index: 0;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+
+        /* -------------------------- */
+        /* SIDEBAR (Dark - Always)    */
+        /* -------------------------- */
         .sidebar {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+            width: var(--sidebar-width);
+            background-color: #0c1220; /* Always dark */
+            color: #f8fafc;
+            position: fixed;
+            top: 0; left: 0; height: 100vh;
+            display: flex; flex-direction: column;
+            z-index: 1000;
+            border-right: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar-brand {
+            padding: 2.5rem 1.5rem 2rem;
+            display: flex; align-items: center; gap: 1rem;
+            text-decoration: none; color: white;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .sidebar-brand-icon {
+            font-size: 2rem; color: var(--primary-blue);
+        }
+        .sidebar-brand-text {
+            font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px;
         }
 
-        .main-content {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            padding: 2rem;
-            margin-bottom: 2rem;
+        .nav-menu {
+            padding: 1.5rem 1rem;
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex; flex-direction: column; gap: 0.25rem;
         }
 
-        .card {
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        .nav-link {
+            display: flex; align-items: center; gap: 1rem;
+            padding: 0.9rem 1.25rem;
+            color: #94a3b8;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 500; font-size: 1.05rem;
+            transition: all 0.2s;
         }
-
-        .card-header {
-            background: var(--accent-color);
-            border-bottom: 1px solid #e0e6ed;
+        .nav-link i { font-size: 1.4rem; transition: transform 0.2s; }
+        .nav-link:hover { color: white; background: rgba(255,255,255,0.05); }
+        .nav-link.active {
+            color: white;
+            background: var(--primary-blue);
+            box-shadow: 0 4px 12px rgba(59,130,246,0.3);
             font-weight: 600;
-            color: var(--secondary-color);
+        }
+        
+        .sidebar-footer {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex; flex-direction: column; gap: 1rem;
+        }
+
+        /* -------------------------- */
+        /* MAIN CONTENT               */
+        /* -------------------------- */
+        .main-wrapper {
+            flex-grow: 1;
+            margin-left: var(--sidebar-width);
+            display: flex; flex-direction: column;
+            min-height: 100vh;
+        }
+        .main-content {
+            padding: 3rem;
+            flex-grow: 1;
+            max-width: 1400px;
+            margin: 0 auto; width: 100%;
+        }
+
+        /* -------------------------- */
+        /* GLOBAL COMPONENT STYLING   */
+        /* -------------------------- */
+        /* By default cards are opaque white, but in dark mode they switch to Bootstrap dark */
+        .card { 
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
+        }
+        /* Glass effect so animated background shows through slightly */
+        [data-bs-theme="light"] .card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+        }
+        [data-bs-theme="dark"] .card {
+            background: rgba(30, 41, 59, 0.85); /* Slate 800 */
+            backdrop-filter: blur(16px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
         .btn-primary {
-            background: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-
-        .btn-primary:hover {
-            background: var(--secondary-color);
-            border-color: var(--secondary-color);
-        }
-
-        .hash-display {
-            font-family: 'Consolas', monospace;
-            background: var(--accent-color);
-            padding: 6px 12px;
-            border-radius: 6px;
-            display: inline-block;
-            word-break: break-all;
-        }
-
-        .metadata-table th {
-            background: var(--accent-color);
-            color: var(--secondary-color);
-        }
-
-        .analysis-image {
-            max-width: 100%;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
-
-        .footer {
-            text-align: center;
-            color: #888;
-            margin-top: 2rem;
-            padding: 1rem;
-            font-size: 0.9rem;
-        }
-
-        .status-badge {
-            font-size: 0.8rem;
-            padding: 0.25rem 0.5rem;
-        }
-
-        .nav-link.active {
-            background: var(--primary-color) !important;
+            background-color: var(--primary-blue) !important;
+            border-color: var(--primary-blue) !important;
             color: white !important;
         }
-    </style>
+        .btn-primary:hover {
+            background-color: var(--primary-blue-hover) !important;
+            transform: translateY(-2px);
+            transition: all 0.2s;
+        }
+        
+        /* Accents */
+        .stat-icon {
+            display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 12px; width: 54px; height: 54px; font-size: 1.75rem;
+            color: white;
+        }
+        .stat-icon.blue { background: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+        .stat-icon.green { background: #10b981; box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
+        .stat-icon.yellow { background: #f59e0b; box-shadow: 0 4px 12px rgba(245,158,11,0.3); }
+        .stat-icon.purple { background: #8b5cf6; box-shadow: 0 4px 12px rgba(139,92,246,0.3); }
 
+        /* General fixes for dark mode */
+        th, td { border-color: inherit; }
+        [data-bs-theme="dark"] .table { color: inherit; }
+        [data-bs-theme="dark"] .text-muted { color: #94a3b8 !important; }
+
+        /* Mobile */
+        .mobile-toggler { display: none; position: fixed; top: 1rem; left: 1rem; z-index: 1050; background: #0f172a; border: none; border-radius: 8px; padding: 0.5rem 0.75rem; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3);}
+        @media (max-width: 991px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.show { transform: translateX(0); }
+            .main-wrapper { margin-left: 0; }
+            .main-content { padding: 4.5rem 1.5rem; }
+            .mobile-toggler { display: block; }
+        }
+        
+        /* Theme Toggle Button */
+        .theme-toggle {
+            background: transparent; border: 1px solid rgba(255,255,255,0.1);
+            color: #94a3b8; padding: 0.6rem; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+            cursor: pointer; width: 100%; transition: all 0.2s; font-weight: 500;
+        }
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.05); color: white;
+        }
+    </style>
+    
+    <!-- Initial Theme Script to prevent flash -->
+    <script>
+        const storedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-bs-theme', storedTheme);
+    </script>
+    
     {% block extra_css %}{% endblock %}
 </head>
-<body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'analysis:dashboard' %}">
-                <i class="bi bi-shield-check"></i> IntegriPic
-            </a>
+<body class="{% if not user.is_authenticated %}auth-layout{% endif %}">
+
+    {% if user.is_authenticated %}
+    <button class="mobile-toggler d-lg-none" id="sidebarToggle">
+        <i class="bi bi-list fs-3"></i>
+    </button>
+
+    <aside class="sidebar" id="sidebar">
+        <a href="{% url 'analysis:dashboard' %}" class="sidebar-brand">
+            <i class="bi bi-hexagon-fill sidebar-brand-icon"></i>
+            <span class="sidebar-brand-text">IntegriPic</span>
+        </a>
+
+        <nav class="nav-menu">
+            <div class="text-uppercase fw-bold mb-2 px-3 mt-2" style="font-size: 0.75rem; color: #64748b; letter-spacing: 1px;">Core System</div>
+            <a href="{% url 'analysis:dashboard' %}" class="nav-link"><i class="bi bi-grid-1x2"></i> <span>Dashboard</span></a>
+            <a href="{% url 'analysis:upload' %}" class="nav-link"><i class="bi bi-cloud-arrow-up"></i> <span>Upload Matrix</span></a>
+            <a href="{% url 'analysis:compare' %}" class="nav-link"><i class="bi bi-intersect"></i> <span>Comparison Analysis</span></a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
+            <div class="text-uppercase fw-bold mb-2 mt-4 px-3" style="font-size: 0.75rem; color: #64748b; letter-spacing: 1px;">Data Forensics</div>
+            <a href="{% url 'analysis:image_list' %}" class="nav-link"><i class="bi bi-images"></i> <span>Asset Gallery</span></a>
+            <a href="{% url 'analysis:analysis_list' %}" class="nav-link"><i class="bi bi-search"></i> <span>Analysis Hub</span></a>
+            <a href="{% url 'reports:user_reports' %}" class="nav-link"><i class="bi bi-file-earmark-text"></i> <span>Platform Reports</span></a>
+            {% if user.is_staff %}
+            <a href="{% url 'reports:admin_reports' %}" class="nav-link"><i class="bi bi-shield-lock"></i> <span>Admin Config</span></a>
+            {% endif %}
+        </nav>
+
+        <div class="sidebar-footer">
+            <button class="theme-toggle" id="themeToggleBtn">
+                <i class="bi bi-moon-stars" id="themeIcon"></i> <span id="themeText">Dark Mode</span>
             </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'analysis:dashboard' %}">
-                                <i class="bi bi-house"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'analysis:upload' %}">
-                                <i class="bi bi-cloud-upload"></i> Upload
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'analysis:image_list' %}">
-                                <i class="bi bi-images"></i> My Images
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'analysis:compare' %}">
-                                <i class="bi bi-aspect-ratio"></i> Compare
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'reports:user_reports' %}">
-                                <i class="bi bi-file-earmark-text"></i> Reports
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-                
-                <ul class="navbar-nav">
-                    {% if user.is_authenticated %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="bi bi-person"></i> {{ user.username }}
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">
-                                    <i class="bi bi-person-circle"></i> Profile
-                                </a></li>
-                                {% if user.is_staff %}
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="{% url 'reports:admin_reports' %}">
-                                        <i class="bi bi-gear"></i> Admin Reports
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'admin:index' %}">
-                                        <i class="bi bi-tools"></i> Admin Panel
-                                    </a></li>
-                                {% endif %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">
-                                    <i class="bi bi-box-arrow-right"></i> Logout
-                                </a></li>
-                            </ul>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'accounts:login' %}">
-                                <i class="bi bi-box-arrow-in-right"></i> Login
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'accounts:register' %}">
-                                <i class="bi bi-person-plus"></i> Register
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
+            <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.02);">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 35px; height: 35px;">
+                        {{ user.username|first|upper }}
+                    </div>
+                    <div>
+                        <div class="fw-bold text-white small" style="line-height: 1.1;">{{ user.username }}</div>
+                        <a href="{% url 'accounts:profile' %}" class="text-decoration-none small" style="color: var(--primary-blue);">View Profile</a>
+                    </div>
+                </div>
+                <a href="{% url 'accounts:logout' %}" class="btn btn-sm text-danger border-0 p-1"><i class="bi bi-power fs-5"></i></a>
             </div>
         </div>
-    </nav>
+    </aside>
 
-    <!-- Messages -->
-    {% if messages %}
-        <div class="container">
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {% if message.tags == 'error' %}
-                        <i class="bi bi-exclamation-triangle"></i>
-                    {% elif message.tags == 'success' %}
-                        <i class="bi bi-check-circle"></i>
-                    {% elif message.tags == 'warning' %}
-                        <i class="bi bi-exclamation-circle"></i>
-                    {% else %}
-                        <i class="bi bi-info-circle"></i>
-                    {% endif %}
-                    {{ message }}
+    <main class="main-wrapper">
+        <div class="main-content">
+            {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                <div class="alert card border-0 border-start border-4 border-{{ message.tags|default:'primary' }} alert-dismissible fade show d-flex align-items-center gap-3 py-3 shadow-sm" role="alert">
+                    {% if message.tags == 'success' %}<i class="bi bi-check-circle-fill text-success fs-4"></i>{% else %}<i class="bi bi-info-circle-fill text-primary fs-4"></i>{% endif %}
+                    <div class="fw-medium text-body">{{ message }}</div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+    {% else %}
+    <!-- Auth Only Content -->
+    <div class="w-100 px-3 position-relative z-index-1" style="max-width: 480px;">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert card border-0 border-start border-4 border-{{ message.tags|default:'primary' }} alert-dismissible fade show mb-4 shadow-sm" role="alert">
+                <div class="fw-medium text-body">{{ message }}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
             {% endfor %}
-        </div>
+        {% endif %}
     {% endif %}
 
-    <!-- Main Content -->
-    <main class="container">
-        {% block content %}{% endblock %}
-    </main>
+            {% block content %}{% endblock %}
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2025 IntegriPic - Image Analysis Tool. All rights reserved.</p>
-            <p class="text-muted">Built with Django and powered by advanced image analysis algorithms.</p>
+    {% if user.is_authenticated %}
         </div>
-    </footer>
+    </main>
+    {% else %}
+    </div>
+    {% endif %}
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Sidebar active logic
+            const path = window.location.pathname;
+            document.querySelectorAll('.nav-link').forEach(link => {
+                const href = link.getAttribute('href');
+                if (href !== '/' && path.includes(href)) {
+                    link.classList.add('active');
+                } else if (href === '/' && path === '/') {
+                    link.classList.add('active');
+                }
+            });
+
+            // Mobile toggle
+            const toggle = document.getElementById('sidebarToggle');
+            if(toggle) {
+                toggle.addEventListener('click', () => {
+                    document.getElementById('sidebar').classList.toggle('show');
+                });
+            }
+
+            // Theme toggle logic
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+            
+            if(themeToggleBtn) {
+                const updateThemeUI = (theme) => {
+                    if(theme === 'dark') {
+                        themeIcon.className = 'bi bi-sun-fill';
+                        themeText.textContent = 'Light Mode';
+                    } else {
+                        themeIcon.className = 'bi bi-moon-stars-fill';
+                        themeText.textContent = 'Dark Mode';
+                    }
+                };
+
+                updateThemeUI(document.documentElement.getAttribute('data-bs-theme'));
+
+                themeToggleBtn.addEventListener('click', () => {
+                    const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    
+                    document.documentElement.setAttribute('data-bs-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    updateThemeUI(newTheme);
+                });
+            }
+        });
+    </script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/auth-service-worker.js')
+                    .then(function(registration) {
+                        console.log('Service Worker registered successfully:', registration.scope);
+                    })
+                    .catch(function(error) {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

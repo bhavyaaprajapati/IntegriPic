@@ -25,3 +25,11 @@ def div(value, arg):
         return float(value) / float(arg)
     except (ValueError, TypeError, ZeroDivisionError):
         return 0
+
+@register.filter
+def multiply(value, arg):
+    """Multiply the value by the argument (alias for mul)."""
+    try:
+        return int(value) * int(arg)
+    except (ValueError, TypeError):
+        return 0

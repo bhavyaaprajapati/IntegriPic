@@ -1,164 +1,179 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
+{% block title %}Upload - IntegriPic{% endblock %}
 
-
-{% block title %}Upload Images - IntegriPic{% endblock %}
-
-
-{% block content %}
-<div class="row justify-content-center">
-   <div class="col-md-8">
-       <div class="main-content">
-           <div class="text-center mb-4">
-               <i class="bi bi-cloud-upload text-primary" style="font-size: 3rem;"></i>
-               <h2 class="mt-3">Upload Images for Analysis</h2>
-               <p class="text-muted">Choose one or more image files to analyze. We support JPG, PNG, BMP, TIFF, GIF, and WebP formats.</p>
-           </div>
-
-
-           <form method="post" enctype="multipart/form-data" id="uploadForm">
-               {% csrf_token %}
-               {{ form|crispy }}
-
-
-               <div class="d-grid gap-2 mt-4">
-                   <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
-                       <i class="bi bi-cloud-upload"></i> Upload and Analyze
-                   </button>
-               </div>
-           </form>
-
-
-           <!-- Multi-file Preview Grid -->
-           <div id="imagePreview" class="mt-4" style="display: none;">
-               <div class="card">
-                   <div class="card-header d-flex justify-content-between align-items-center">
-                       <h5 class="mb-0"><i class="bi bi-eye"></i> Selected Files</h5>
-                       <span id="fileCount" class="badge bg-primary"></span>
-                   </div>
-                   <div class="card-body">
-                       <div id="previewGrid" class="row g-2"></div>
-                   </div>
-               </div>
-           </div>
-
-
-           <!-- Analysis Options Info -->
-           <div class="row mt-5">
-               <div class="col-12">
-                   <h4 class="text-center mb-4">What happens after upload?</h4>
-               </div>
-               <div class="col-md-4">
-                   <div class="card h-100">
-                       <div class="card-body text-center">
-                           <i class="bi bi-search text-primary" style="font-size: 2rem;"></i>
-                           <h5 class="mt-3">Metadata Extraction</h5>
-                           <p class="text-muted">We'll extract EXIF data, camera settings, GPS coordinates, and other technical information.</p>
-                       </div>
-                   </div>
-               </div>
-               <div class="col-md-4">
-                   <div class="card h-100">
-                       <div class="card-body text-center">
-                           <i class="bi bi-eye text-warning" style="font-size: 2rem;"></i>
-                           <h5 class="mt-3">ELA Analysis</h5>
-                           <p class="text-muted">Error Level Analysis will help detect image manipulations and potential forgeries.</p>
-                       </div>
-                   </div>
-               </div>
-               <div class="col-md-4">
-                   <div class="card h-100">
-                       <div class="card-body text-center">
-                           <i class="bi bi-shield-lock text-success" style="font-size: 2rem;"></i>
-                           <h5 class="mt-3">Hidden Data Detection</h5>
-                           <p class="text-muted">We'll scan for steganographically hidden data and messages within the image.</p>
-                       </div>
-                   </div>
-               </div>
-           </div>
-       </div>
-   </div>
-</div>
-
-
-<!-- Loading Modal -->
-<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-   <div class="modal-dialog modal-dialog-centered">
-       <div class="modal-content">
-           <div class="modal-body text-center py-4">
-               <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
-               <h5 id="loadingTitle">Analyzing your images...</h5>
-               <p class="text-muted mb-0">This may take a few moments depending on the number and size of images.</p>
-           </div>
-       </div>
-   </div>
-</div>
+{% block extra_css %}
+<style>
+    .drag-drop-zone {
+        border: 2px dashed rgba(128,128,128,0.4);
+        border-radius: 12px;
+        background: rgba(128,128,128,0.05);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+    }
+    .drag-drop-zone:hover, .drag-drop-zone.dragover {
+        border-color: var(--primary-blue);
+        background: rgba(59, 130, 246, 0.05);
+    }
+    .drag-icon-box {
+        width: 72px; height: 72px;
+        border-radius: 16px;
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--primary-blue);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2.2rem; margin: 0 auto;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    .hidden-input {
+        position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index: 5;
+    }
+    .preview-image {
+        max-height: 250px; border-radius: 8px; border: 1px solid rgba(128,128,128,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+</style>
 {% endblock %}
 
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-2 border-bottom">
+    <div class="d-flex align-items-center">
+        <i class="bi bi-cloud-arrow-up fs-2 text-primary me-3"></i>
+        <div>
+            <h2 class="fw-bold mb-1">Asset Ingestion</h2>
+            <p class="mb-0 text-muted">Securely transmit media to the forensic analysis pipeline.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 p-4 h-100">
+            <form method="post" enctype="multipart/form-data" id="uploadForm">
+                {% csrf_token %}
+                
+                <div class="drag-drop-zone p-5 text-center mb-4" id="dropZone">
+                    <input type="file" name="image" id="id_image" class="hidden-input" accept="image/*" required multiple>
+                    
+                    <div id="uploadPrompt">
+                        <div class="drag-icon-box mb-4 shadow-sm"><i class="bi bi-cloud-upload"></i></div>
+                        <h4 class="fw-bold text-body mb-2">Initialize Secure Transfer</h4>
+                        <p class="text-muted mb-0">Drag and drop media here or click to browse protocol</p>
+                    </div>
+
+                    <div id="imagePreview" style="display: none;" class="position-relative z-index-1">
+                        <img id="previewImg" class="preview-image mb-3" src="" alt="Preview">
+                        <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                            <i class="bi bi-file-earmark-image fs-5 text-primary"></i>
+                            <h6 class="fw-bold text-body file-name mb-0"></h6>
+                        </div>
+                        <p class="text-muted small file-size mb-0"></p>
+                        
+                        <div class="mt-4">
+                            <button type="button" class="btn btn-sm btn-outline-secondary px-3 position-relative" style="z-index: 10;" id="resetBtn">
+                                Drop Asset Buffer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-3 justify-content-end align-items-center border-top pt-4">
+                    <div class="small text-muted me-auto"><i class="bi bi-shield-lock-fill text-success me-1"></i> End-to-End Encrypted</div>
+                    <button type="submit" class="btn btn-primary px-4 fw-medium d-flex align-items-center gap-2" id="submitBtn" disabled>
+                        <i class="bi bi-cpu"></i> Execute Hashing
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm p-4 h-100 bg-transparent">
+            <h6 class="text-uppercase text-muted fw-bold mb-4" style="font-size: 0.75rem; letter-spacing: 1px;">Supported Topologies</h6>
+            
+            <div class="d-flex align-items-center gap-3 mb-3 p-3 rounded-3 bg-body shadow-sm border">
+                <i class="bi bi-image text-primary fs-3"></i>
+                <div>
+                    <div class="fw-bold text-body small">JPEG / JPG</div>
+                    <div class="text-muted" style="font-size: 0.8rem;">Standard photographic media</div>
+                </div>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3 mb-3 p-3 rounded-3 bg-body shadow-sm border">
+                <i class="bi bi-images text-warning fs-3"></i>
+                <div>
+                    <div class="fw-bold text-body small">PNG</div>
+                    <div class="text-muted" style="font-size: 0.8rem;">Lossless raster graphics</div>
+                </div>
+            </div>
+            
+            <div class="alert alert-warning border-warning border-start border-4 bg-opacity-10 mt-4 p-3 shadow-sm">
+                <h6 class="fw-bold mb-1 text-warning"><i class="bi bi-exclamation-triangle-fill me-1"></i> Data Privacy Notice</h6>
+                <p class="text-body mb-0" style="font-size: 0.8rem;">Assets uploaded undergo immediate volatile analysis. Data is processed locally and purged post-analysis.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Holographic Loading Protocol -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 bg-dark shadow-lg">
+            <div class="modal-body text-center p-5 position-relative overflow-hidden rounded-3">
+                <div class="position-absolute w-100" style="top:0; left:0; height:2px; background: linear-gradient(90deg, transparent, var(--primary-blue), transparent); animation: scanning 1.5s infinite;"></div>
+                <div class="spinner-grow text-primary mb-4" style="width: 3rem; height: 3rem;"></div>
+                <h5 class="fw-bold text-white mb-2" id="loadingTitle">Running Diagnostic...</h5>
+                <p class="text-muted small mb-0">Securely transferring asset fragments.</p>
+            </div>
+        </div>
+    </div>
+</div>
+<style>@keyframes scanning { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }</style>
+{% endblock %}
 
 {% block extra_js %}
 <script>
-document.getElementById('id_image').addEventListener('change', function(e) {
-   const files = Array.from(e.target.files);
-   const preview = document.getElementById('imagePreview');
-   const grid = document.getElementById('previewGrid');
-   const fileCount = document.getElementById('fileCount');
+    const fileInput = document.getElementById('id_image');
+    const uploadPrompt = document.getElementById('uploadPrompt');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImg = document.getElementById('previewImg');
+    const submitBtn = document.getElementById('submitBtn');
+    const resetBtn = document.getElementById('resetBtn');
 
+    if(fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    document.querySelector('.file-name').textContent = file.name;
+                    document.querySelector('.file-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB ' + (fileInput.files.length > 1 ? '(+ ' + (fileInput.files.length - 1) + ' more block(s))' : '');
+                    uploadPrompt.style.display = 'none';
+                    imagePreview.style.display = 'block';
+                    submitBtn.disabled = false;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
 
-   grid.innerHTML = '';
+        resetBtn.addEventListener('click', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            fileInput.value = '';
+            uploadPrompt.style.display = 'block';
+            imagePreview.style.display = 'none';
+            submitBtn.disabled = true;
+        });
+    }
 
-
-   if (files.length === 0) {
-       preview.style.display = 'none';
-       return;
-   }
-
-
-   fileCount.textContent = files.length + ' file' + (files.length !== 1 ? 's' : '');
-   preview.style.display = 'block';
-
-
-   files.forEach(function(file) {
-       const col = document.createElement('div');
-       col.className = 'col-6 col-md-4 col-lg-3';
-
-
-       const card = document.createElement('div');
-       card.className = 'card h-100';
-
-
-       const imgEl = document.createElement('img');
-       imgEl.className = 'card-img-top';
-       imgEl.style.cssText = 'height: 120px; object-fit: cover;';
-
-
-       const body = document.createElement('div');
-       body.className = 'card-body p-2';
-       body.innerHTML = '<p class="card-text mb-0" style="font-size:0.75rem; word-break:break-all;">' +
-           '<strong>' + file.name + '</strong><br>' +
-           (file.size / 1024 / 1024).toFixed(2) + ' MB</p>';
-
-
-       const reader = new FileReader();
-       reader.onload = function(ev) { imgEl.src = ev.target.result; };
-       reader.readAsDataURL(file);
-
-
-       card.appendChild(imgEl);
-       card.appendChild(body);
-       col.appendChild(card);
-       grid.appendChild(col);
-   });
-});
-
-
-document.getElementById('uploadForm').addEventListener('submit', function() {
-   const files = document.getElementById('id_image').files;
-   const count = files.length;
-   document.getElementById('loadingTitle').textContent =
-       'Analyzing ' + (count > 1 ? count + ' images' : 'your image') + '...';
-   const modal = new bootstrap.Modal(document.getElementById('loadingModal'));
-   modal.show();
-});
+    const uf = document.getElementById('uploadForm');
+    if(uf) {
+        uf.addEventListener('submit', function() {
+            new bootstrap.Modal(document.getElementById('loadingModal')).show();
+            let el = document.getElementById('loadingTitle');
+            let txt = ['Extracting EXIF Signature...', 'Scanning Sub-pixel Matrices...', 'Rendering Crytpo Hashes...'];
+            let count = 0;
+            setInterval(() => { el.textContent = txt[count % txt.length]; count++; }, 1500);
+        });
+    }
 </script>
 {% endblock %}

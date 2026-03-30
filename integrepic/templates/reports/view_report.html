@@ -3,187 +3,202 @@
 {% block title %}{{ report.report_title }} - IntegriPic{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid px-0">
     <div class="row">
         <div class="col-lg-12">
-            <div class="main-content">
-                <!-- Report Header -->
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="text-primary">
-                        <i class="bi bi-file-earmark-text me-2"></i>
-                        {{ report.report_title }}
-                    </h1>
-                    <div class="text-muted">
-                        <small>Generated on {{ report.created_at|date:"M d, Y H:i" }}</small>
+            <!-- Print Header - only visible during printing -->
+            <div class="d-none d-print-block text-center mb-5 pb-3 border-bottom">
+                <h2 class="fw-bold">IntegriPic Forensic Platform</h2>
+                <h4 class="text-muted">Official System Report</h4>
+                <p>Generated: {{ report.created_at|date:"M d, Y H:i" }} | ID: {{ report.id }}</p>
+            </div>
+
+            <!-- Report Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 p-4 card border-0 shadow-sm report-header-block" style="border-radius: 16px;">
+                <div>
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <div class="stat-icon {% if report.analysis %}blue{% else %}yellow{% endif %} shadow-sm" style="width: 50px; height: 50px; border-radius: 12px; font-size: 1.4rem;">
+                            <i class="bi {% if report.analysis %}bi-file-earmark-binary{% else %}bi-images{% endif %}"></i>
+                        </div>
+                        <h2 class="fw-bolder mb-0 text-dark">{{ report.report_title }}</h2>
+                    </div>
+                    <div class="text-muted fw-medium ms-1">
+                        <i class="bi bi-clock me-1"></i> Generated on {{ report.created_at|date:"F j, Y, g:i a" }} by {{ report.user.get_full_name|default:report.user.username }}
                     </div>
                 </div>
+                <div class="d-flex gap-2 mt-3 mt-md-0 d-print-none">
+                    <a href="{% url 'reports:user_reports' %}" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 50px;"><i class="bi bi-arrow-left me-2"></i>Back</a>
+                    <button onclick="window.print()" class="btn btn-primary px-4 py-2 shadow-sm" style="border-radius: 50px;"><i class="bi bi-printer me-2"></i>Print Ledger</button>
+                </div>
+            </div>
 
-                {% if report.analysis %}
-                    <!-- Single Image Analysis Report -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-primary text-white">
-                            <h3 class="card-title mb-0">
-                                <i class="bi bi-image me-2"></i>
-                                Image Analysis Report
-                            </h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h5 class="text-secondary mb-3">Basic Information</h5>
-                                    <table class="table table-borderless">
+            {% if report.analysis %}
+                <!-- Single Image Analysis Report -->
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
+                    <div class="card-header bg-primary text-white pt-4 pb-3 px-4 border-0">
+                        <h4 class="card-title fw-bold mb-0 d-flex align-items-center"><i class="bi bi-search me-2"></i> Deep Analysis Extraction Details</h4>
+                    </div>
+                    <div class="card-body p-4 p-md-5">
+                        <div class="row g-5">
+                            <div class="col-md-6 border-md-end pe-md-5">
+                                <h5 class="fw-bold text-dark mb-4 pb-2 border-bottom">File Forensics Identity</h5>
+                                <table class="table table-borderless table-sm mb-0">
+                                    <tbody>
                                         <tr>
-                                            <td class="fw-bold">Filename:</td>
-                                            <td>{{ report.analysis.original_filename }}</td>
+                                            <td class="text-muted fw-semibold pb-3" style="width: 130px;">Source File</td>
+                                            <td class="fw-bold text-dark pb-3 text-break">{{ report.analysis.original_filename }}</td>
                                         </tr>
                                         <tr>
-                                            <td class="fw-bold">Format:</td>
-                                            <td>
-                                                <span class="badge bg-info">{{ report.analysis.image_format }}</span>
-                                            </td>
+                                            <td class="text-muted fw-semibold pb-3">Format Type</td>
+                                            <td class="pb-3"><span class="badge bg-light text-primary border px-3 py-2 rounded-pill">{{ report.analysis.image_format }}</span></td>
                                         </tr>
                                         <tr>
-                                            <td class="fw-bold">File Size:</td>
-                                            <td>{{ report.analysis.file_size_mb }} MB</td>
+                                            <td class="text-muted fw-semibold pb-3">Data Footprint</td>
+                                            <td class="fw-medium text-dark pb-3">{{ report.analysis.file_size_mb }} MB</td>
                                         </tr>
                                         <tr>
-                                            <td class="fw-bold">SHA256 Hash:</td>
-                                            <td><code class="text-muted">{{ report.analysis.sha256_hash|truncatechars:16 }}...</code></td>
+                                            <td class="text-muted fw-semibold pb-3">Integrity Hash</td>
+                                            <td class="pb-3"><code class="text-body bg-light px-2 py-1 rounded border">{{ report.analysis.sha256_hash|default:"N/A"|truncatechars:32 }}...</code></td>
                                         </tr>
                                         <tr>
-                                            <td class="fw-bold">Upload Date:</td>
-                                            <td>{{ report.analysis.created_at|date:"M d, Y H:i" }}</td>
+                                            <td class="text-muted fw-semibold pb-3">Ingestion Time</td>
+                                            <td class="fw-medium text-dark pb-3">{{ report.analysis.created_at|date:"M d, Y H:i" }}</td>
                                         </tr>
                                         <tr>
-                                            <td class="fw-bold">Status:</td>
-                                            <td>
-                                                <span class="badge {% if report.analysis.status == 'completed' %}bg-success{% else %}bg-warning{% endif %}">
-                                                    {{ report.analysis.get_status_display }}
+                                            <td class="text-muted fw-semibold pb-0">Run Status</td>
+                                            <td class="pb-0">
+                                                <span class="badge px-3 py-2 rounded-pill {% if report.analysis.status == 'completed' %}bg-success text-white{% else %}bg-warning text-dark{% endif %}">
+                                                    {{ report.analysis.get_status_display|upper }}
                                                 </span>
                                             </td>
                                         </tr>
-                                    </table>
-                                </div>
-                                <div class="col-md-6">
-                                    <h5 class="text-secondary mb-3">Analysis Results</h5>
-                                    
-                                    <!-- Steganography Analysis -->
-                                    {% if report.analysis.steganography_result %}
-                                        <div class="alert alert-info">
-                                            <strong><i class="bi bi-shield-check me-1"></i> Steganography Analysis:</strong><br>
-                                            {{ report.analysis.steganography_result }}
-                                            {% if report.analysis.steganography_message %}
-                                                <br><strong>Hidden Message:</strong>
-                                                <div class="mt-2 p-2 bg-light rounded">
-                                                    <code>{{ report.analysis.steganography_message|truncatechars:200 }}</code>
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                    {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-6 ps-md-5">
+                                <h5 class="fw-bold text-dark mb-4 pb-2 border-bottom">Heuristics & Verification</h5>
+                                
+                                <!-- Steganography Analysis -->
+                                {% if report.analysis.steganography_result %}
+                                    <div class="alert bg-light border-start border-4 border-info shadow-sm mb-4">
+                                        <div class="fw-bold text-info mb-2 d-flex align-items-center"><i class="bi bi-shield-check me-2 fs-5"></i> Steganography Discovery Phase</div>
+                                        <div class="text-dark fw-medium">{{ report.analysis.steganography_result }}</div>
+                                        {% if report.analysis.steganography_message %}
+                                            <div class="mt-3">
+                                                <div class="text-muted small fw-bold text-uppercase mb-1">Payload Extracted:</div>
+                                                <div class="p-3 bg-white rounded border text-break"><code>{{ report.analysis.steganography_message }}</code></div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
 
-                                    <!-- ELA Analysis -->
-                                    {% if report.analysis.ela_result %}
-                                        <div class="alert alert-warning">
-                                            <strong><i class="bi bi-graph-up me-1"></i> Error Level Analysis:</strong><br>
-                                            <small class="text-muted">{{ report.analysis.ela_result|truncatechars:150 }}</small>
-                                        </div>
-                                    {% endif %}
+                                <!-- ELA Analysis -->
+                                {% if report.analysis.ela_result %}
+                                    <div class="alert bg-light border-start border-4 border-warning shadow-sm mb-4">
+                                        <div class="fw-bold text-warning mb-2 d-flex align-items-center"><i class="bi bi-graph-up-arrow me-2 fs-5"></i> Error Level Matrix</div>
+                                        <div class="text-dark small lh-base">{{ report.analysis.ela_result|truncatechars:200 }}</div>
+                                    </div>
+                                {% endif %}
 
-                                    <!-- System Information -->
-                                    {% if report.analysis.system_info %}
-                                        <div class="text-muted">
-                                            <small><strong>Analysis System:</strong> {{ report.analysis.system_info }}</small>
+                                <!-- System Information -->
+                                {% if report.analysis.system_info %}
+                                    <div class="d-flex align-items-start gap-2 text-muted mt-4 bg-light p-3 rounded-3 border">
+                                        <i class="bi bi-hdd-rack text-secondary mt-1"></i>
+                                        <div class="small lh-sm">
+                                            <span class="fw-bold d-block mb-1 text-dark">Processing Apparatus Protocol</span>
+                                            {{ report.analysis.system_info }}
                                         </div>
-                                    {% endif %}
-                                </div>
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
+                </div>
 
-                {% else %}
-                    <!-- Image Comparison Report -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-success text-white">
-                            <h3 class="card-title mb-0">
-                                <i class="bi bi-images me-2"></i>
-                                Image Comparison Report
-                            </h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h5 class="text-secondary mb-3">Comparison Details</h5>
-                                    <table class="table table-borderless">
+            {% else %}
+                <!-- Image Comparison Report -->
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
+                    <div class="card-header bg-success text-white pt-4 pb-3 px-4 border-0">
+                        <h4 class="card-title fw-bold mb-0 d-flex align-items-center"><i class="bi bi-intersect me-2"></i> Comparative Analysis Results</h4>
+                    </div>
+                    <div class="card-body p-4 p-md-5">
+                        <div class="row g-5">
+                            <div class="col-md-6 border-md-end pe-md-5">
+                                <h5 class="fw-bold text-dark mb-4 pb-2 border-bottom">Control References</h5>
+                                <div class="p-4 bg-light rounded-3 mb-4 border shadow-sm">
+                                    <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">
+                                        <div class="badge bg-secondary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:30px;height:30px;">A</div>
+                                        <div class="fw-bold text-dark text-break">{{ report.comparison.image1_filename }}</div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="badge bg-secondary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:30px;height:30px;">B</div>
+                                        <div class="fw-bold text-dark text-break">{{ report.comparison.image2_filename }}</div>
+                                    </div>
+                                </div>
+                                <table class="table table-borderless table-sm mb-0">
+                                    <tbody>
                                         <tr>
-                                            <td class="fw-bold">First Image:</td>
-                                            <td>{{ report.comparison.image1_filename }}</td>
+                                            <td class="text-muted fw-semibold pb-3" style="width: 140px;">Execution Date</td>
+                                            <td class="fw-medium text-dark pb-3">{{ report.comparison.created_at|date:"M d, Y H:i" }}</td>
                                         </tr>
                                         <tr>
-                                            <td class="fw-bold">Second Image:</td>
-                                            <td>{{ report.comparison.image2_filename }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Comparison Date:</td>
-                                            <td>{{ report.comparison.created_at|date:"M d, Y H:i" }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Result:</td>
-                                            <td>
+                                            <td class="text-muted fw-semibold pb-0">Verdict</td>
+                                            <td class="pb-0">
                                                 {% if report.comparison.are_identical %}
-                                                    <span class="badge bg-success">
-                                                        <i class="bi bi-check-circle me-1"></i>Images are identical
-                                                    </span>
+                                                    <span class="badge bg-success px-3 py-2 rounded-pill"><i class="bi bi-check-circle-fill me-1"></i> EXACT MATCH</span>
                                                 {% else %}
-                                                    <span class="badge bg-warning">
-                                                        <i class="bi bi-exclamation-triangle me-1"></i>Images have differences
-                                                    </span>
+                                                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="bi bi-exclamation-triangle-fill me-1"></i> DEVIATION</span>
                                                 {% endif %}
                                             </td>
                                         </tr>
-                                    </table>
-                                </div>
-                                <div class="col-md-6">
-                                    <h5 class="text-secondary mb-3">Analysis Summary</h5>
-                                    <div class="alert {% if report.comparison.are_identical %}alert-success{% else %}alert-warning{% endif %}">
-                                        <p class="mb-0">
-                                            {% if report.comparison.are_identical %}
-                                                <i class="bi bi-check-circle-fill me-2"></i>
-                                                The uploaded images are pixel-perfect matches. No differences detected.
-                                            {% else %}
-                                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                                Differences were detected between the uploaded images. This could indicate modifications, compression artifacts, or different source files.
-                                            {% endif %}
-                                        </p>
-                                    </div>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-6 ps-md-5 d-flex flex-column justify-content-center">
+                                <h5 class="fw-bold text-dark mb-4 pb-2 border-bottom">Final Deduction</h5>
+                                <div class="p-4 rounded-3 border-start border-4 shadow-sm {% if report.comparison.are_identical %}bg-success bg-opacity-10 border-success{% else %}bg-warning bg-opacity-10 border-warning{% endif %}">
+                                    {% if report.comparison.are_identical %}
+                                        <div class="d-flex align-items-center text-success mb-2 gap-2">
+                                            <i class="bi bi-shield-check fs-2"></i>
+                                            <h4 class="fw-bold mb-0">Identity Confirmed</h4>
+                                        </div>
+                                        <p class="text-dark fw-medium mb-0 lh-lg">Cryptographic and structural reviews conclude that the references A and B are pixel-perfect counterparts. No distortions or modifications were detected during comparison.</p>
+                                    {% else %}
+                                        <div class="d-flex align-items-center text-warning mb-2 gap-2">
+                                            <i class="bi bi-shield-exclamation fs-2" style="color:#b45309;"></i>
+                                            <h4 class="fw-bold mb-0" style="color:#b45309;">Anomaly Present</h4>
+                                        </div>
+                                        <p class="text-dark fw-medium mb-0 lh-lg">Differences were reliably detected bridging reference A and B. This could correlate to hostile modifications, lossy compression artifacts, format transcodes, or altogether dissimilar source files.</p>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
                     </div>
-                {% endif %}
-
-                <!-- Report Actions -->
-                <div class="d-flex justify-content-between">
-                    <a href="{% url 'reports:user_reports' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Back to Reports
-                    </a>
-                    <button onclick="window.print()" class="btn btn-primary">
-                        <i class="bi bi-printer me-1"></i>Print Report
-                    </button>
                 </div>
-            </div>
+            {% endif %}
+
         </div>
     </div>
 </div>
 
 <style>
 @media print {
-    .btn, .navbar, .sidebar {
+    body { background: white !important; }
+    .btn, .navbar, .sidebar, .d-print-none, .report-header-block {
         display: none !important;
     }
     .main-content {
+        margin-left: 0 !important;
+        padding-left: 0 !important;
         box-shadow: none !important;
         border: none !important;
+        background: white !important;
+        width: 100% !important;
+        max-width: 100% !important;
     }
+    .card { box-shadow: none !important; border: 1px solid #dee2e6 !important; }
+    .bg-light { background-color: white !important; }
+    .shadow-sm { box-shadow: none !important; }
 }
 </style>
 {% endblock %}

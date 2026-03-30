@@ -1,71 +1,103 @@
 {% extends 'base.html' %}
-
-
 {% block title %}Batch Upload Results - IntegriPic{% endblock %}
-
-
 {% block content %}
-<div class="main-content">
-   <div class="text-center mb-4">
-       <i class="bi bi-collection text-primary" style="font-size: 3rem;"></i>
-       <h2 class="mt-3">Batch Upload Results</h2>
-       <p class="text-muted">
-           {{ analyses|length }} image{{ analyses|length|pluralize }} analyzed &mdash;
-           <span class="text-success">{{ completed }} completed</span>
-           {% if failed %}
-           &middot; <span class="text-danger">{{ failed }} failed</span>
-           {% endif %}
-       </p>
-   </div>
-
-
-   {% if analyses %}
-       <div class="row">
-           {% for analysis in analyses %}
-               <div class="col-md-6 col-lg-4 mb-4">
-                   <div class="card h-100">
-                       <div class="card-body">
-                           <h6 class="card-title">{{ analysis.original_filename|truncatechars:30 }}</h6>
-                           <p class="text-muted mb-2">
-                               <small>
-                                   Status:
-                                   {% if analysis.status == 'completed' %}
-                                       <span class="badge bg-success">{{ analysis.get_status_display }}</span>
-                                   {% elif analysis.status == 'failed' %}
-                                       <span class="badge bg-danger">{{ analysis.get_status_display }}</span>
-                                   {% elif analysis.status == 'processing' %}
-                                       <span class="badge bg-warning">{{ analysis.get_status_display }}</span>
-                                   {% else %}
-                                       <span class="badge bg-secondary">{{ analysis.get_status_display }}</span>
-                                   {% endif %}
-                               </small>
-                           </p>
-                           <p class="text-muted mb-2">
-                               <small>{{ analysis.image_format }} | {{ analysis.file_size_mb }} MB</small>
-                           </p>
-                           <p class="text-muted mb-3">
-                               <small>{{ analysis.created_at|date:"M d, Y H:i" }}</small>
-                           </p>
-                           <div class="d-grid">
-                               <a href="{% url 'analysis:analysis_detail' analysis.id %}" class="btn btn-outline-primary btn-sm">
-                                   <i class="bi bi-eye"></i> View Results
-                               </a>
-                           </div>
-                       </div>
-                   </div>
-               </div>
-           {% endfor %}
-       </div>
-   {% endif %}
-
-
-   <div class="text-center mt-4 d-flex justify-content-center gap-3">
-       <a href="{% url 'analysis:upload' %}" class="btn btn-primary">
-           <i class="bi bi-cloud-upload"></i> Upload More Images
-       </a>
-       <a href="{% url 'analysis:analysis_list' %}" class="btn btn-outline-secondary">
-           <i class="bi bi-list-check"></i> All Analyses
-       </a>
-   </div>
+<div class="page-header mb-5 pb-3 border-bottom border-light">
+    <h1 class="fw-bolder mb-2" style="background: -webkit-linear-gradient(45deg, var(--primary), #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Batch Upload Results</h1>
+    <p class="mb-0" style="color: var(--text-muted); font-size: 0.95rem;">
+        {{ analyses|length }} image{{ analyses|length|pluralize }} analyzed &mdash;
+        <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>{{ completed }} completed</span>
+        {% if failed %}&middot; <span class="text-danger fw-semibold"><i class="bi bi-x-circle-fill me-1"></i>{{ failed }} failed</span>{% endif %}
+    </p>
 </div>
+
+{% if analyses %}
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 p-3" style="border-radius: 16px;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon blue" style="width: 56px; height: 56px; border-radius: 14px; font-size: 1.5rem;"><i class="bi bi-collection"></i></div>
+                <div>
+                    <div class="fw-bolder text-dark" style="font-size: 1.8rem; line-height: 1;">{{ analyses|length }}</div>
+                    <div class="small fw-semibold text-muted text-uppercase letter-spacing-1 mt-1">Total Uploads</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 p-3" style="border-radius: 16px;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon green" style="width: 56px; height: 56px; border-radius: 14px; font-size: 1.5rem;"><i class="bi bi-check2-circle"></i></div>
+                <div>
+                    <div class="fw-bolder text-success" style="font-size: 1.8rem; line-height: 1;">{{ completed }}</div>
+                    <div class="small fw-semibold text-muted text-uppercase letter-spacing-1 mt-1">Completed</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% if failed %}
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 p-3" style="border-radius: 16px;">
+            <div class="d-flex align-items-center gap-3">
+                <div style="background: #fef2f2; color: #ef4444; width: 56px; height: 56px; border-radius: 14px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;"><i class="bi bi-x-circle"></i></div>
+                <div>
+                    <div class="fw-bolder text-danger" style="font-size: 1.8rem; line-height: 1;">{{ failed }}</div>
+                    <div class="small fw-semibold text-muted text-uppercase letter-spacing-1 mt-1">Failed</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row g-4">
+    {% for analysis in analyses %}
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-0 shadow-sm" style="border-radius: 16px; transition: transform 0.25s ease;">
+            <div class="card-body p-4 position-relative overflow-hidden">
+                <div class="position-absolute" style="top: -15px; right: -15px; width: 70px; height: 70px; background: {% if analysis.status == 'completed' %}#dcfce7{% elif analysis.status == 'failed' %}#fee2e2{% elif analysis.status == 'processing' %}#fef9c3{% else %}#f1f5f9{% endif %}; border-radius: 50%; opacity: 0.4;"></div>
+                <div class="position-relative" style="z-index: 1;">
+                    <div class="d-flex align-items-start justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="stat-icon {% if analysis.status == 'completed' %}green{% elif analysis.status == 'failed' %}bg-danger text-white{% elif analysis.status == 'processing' %}yellow{% else %}blue{% endif %}" style="width: 40px; height: 40px; border-radius: 10px;">
+                                {% if analysis.status == 'completed' %}<i class="bi bi-check2"></i>
+                                {% elif analysis.status == 'failed' %}<i class="bi bi-x-lg"></i>
+                                {% elif analysis.status == 'processing' %}<i class="bi bi-arrow-repeat"></i>
+                                {% else %}<i class="bi bi-hourglass-split"></i>{% endif %}
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0 text-truncate" style="max-width: 140px;" title="{{ analysis.original_filename }}">{{ analysis.original_filename|truncatechars:20 }}</h6>
+                                <div class="small fw-medium mt-1">
+                                    {% if analysis.status == 'completed' %}<span class="text-success">Completed</span>
+                                    {% elif analysis.status == 'failed' %}<span class="text-danger">Failed</span>
+                                    {% elif analysis.status == 'processing' %}<span class="text-warning">Processing</span>
+                                    {% else %}<span class="text-secondary">Pending</span>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="small" style="color: var(--text-muted);">
+                            <div class="mb-1">{{ analysis.image_format }} • {{ analysis.file_size_mb }} MB</div>
+                            <div>{{ analysis.created_at|date:"M d, Y" }}</div>
+                        </div>
+                        <a href="{% url 'analysis:analysis_detail' analysis.id %}" class="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; color: var(--primary);">
+                            <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="d-flex justify-content-center gap-3 mt-5">
+    <a href="{% url 'analysis:upload' %}" class="btn btn-primary px-4 py-2" style="border-radius: 50px;"><i class="bi bi-cloud-upload me-2"></i>Upload More Images</a>
+    <a href="{% url 'analysis:analysis_list' %}" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 50px;"><i class="bi bi-list-check me-2"></i>All Analyses</a>
+</div>
+
+<style>
+    .card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
+</style>
 {% endblock %}

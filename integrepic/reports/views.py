@@ -10,6 +10,17 @@ from django.db.models import Q
 from analysis.models import ImageAnalysis, ImageComparison
 from .models import AnalysisReport, ComparisonReport
 import itertools
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Try to import WeasyPrint for PDF generation
+try:
+    from weasyprint import HTML, CSS
+    WEASYPRINT_AVAILABLE = True
+except (ImportError, OSError) as e:
+    WEASYPRINT_AVAILABLE = False
+    logger.warning(f"WeasyPrint not available: {e}")
 
 
 @login_required
@@ -135,31 +146,48 @@ def admin_reports(request):
 
 @login_required
 def download_report(request, report_id):
-    """Download report as HTML file"""
+    """Download report as PDF or HTML file"""
     # Try to find the report in both tables
     analysis_report = AnalysisReport.objects.filter(id=report_id).first()
     comparison_report = ComparisonReport.objects.filter(id=report_id).first()
-    
+
     report = analysis_report or comparison_report
-    
+
     if not report:
         raise Http404("Report not found")
-    
+
     # Check permissions
     if not (request.user == report.user or request.user.is_staff):
         raise Http404("Report not found")
-    
-    # Render the report template
-    html_content = render_to_string('reports/view_report.html', {
-        'report': report,
-    }, request=request)
-    
-    # Create HTTP response with HTML content
-    response = HttpResponse(html_content, content_type='text/html')
-    filename = f"IntegriPic_Report_{report.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.html"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    
-    return response
+
+    try:
+        # Render the report template
+        html_content = render_to_string('reports/view_report.html', {
+            'report': report,
+        }, request=request)
+
+        # Try to generate PDF if WeasyPrint is available
+        if WEASYPRINT_AVAILABLE:
+            try:
+                pdf_bytes = HTML(string=html_content).write_pdf()
+                filename = f"IntegriPic_Report_{report.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                response = HttpResponse(pdf_bytes, content_type='application/pdf')
+                response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                return response
+            except Exception as pdf_error:
+                logger.warning(f"PDF generation failed, falling back to HTML: {pdf_error}")
+                # Fall through to HTML response
+
+        # Fallback: Return HTML file
+        response = HttpResponse(html_content, content_type='text/html; charset=utf-8')
+        filename = f"IntegriPic_Report_{report.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.html"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Error generating report download: {e}")
+        raise Http404("Error generating report")
 
 
 @staff_member_required
@@ -250,3 +278,76 @@ def admin_comparison_report(request, comparison_pk):
     }
     
     return render(request, 'reports/comparison_report.html', context)
+
+
+@login_required
+def export_analysis_pdf(request, analysis_pk):
+    """Export analysis report as PDF"""
+    if not WEASYPRINT_AVAILABLE:
+        messages.error(request, "PDF export is not available. Please install WeasyPrint dependencies.")
+        return redirect('analysis:analysis_detail', pk=analysis_pk)
+
+    try:
+        analysis = get_object_or_404(ImageAnalysis, pk=analysis_pk, user=request.user)
+
+        # Render HTML template
+        html_string = render_to_string('reports/analysis_report_pdf.html', {
+            'analysis': analysis,
+        })
+
+        # Convert to PDF using WeasyPrint
+        html = HTML(string=html_string)
+        pdf = html.write_pdf()
+
+        # Create HTTP response
+        response = HttpResponse(pdf, content_type='application/pdf')
+        filename = f"IntegriPic_Analysis_{analysis.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+        logger.info(f"User {request.user.username} exported PDF for analysis {analysis.id}")
+        messages.success(request, f"Report exported successfully: {filename}")
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Error exporting PDF for analysis {analysis_pk}: {str(e)}")
+        messages.error(request, f"Error exporting PDF: {str(e)}")
+        return redirect('analysis:analysis_detail', pk=analysis_pk)
+
+
+@login_required
+def export_comparison_pdf(request, comparison_pk):
+    """Export comparison report as PDF"""
+    if not WEASYPRINT_AVAILABLE:
+        messages.error(request, "PDF export is not available. Please install WeasyPrint dependencies.")
+        return redirect('analysis:comparison_detail', pk=comparison_pk)
+
+    try:
+        comparison = get_object_or_404(ImageComparison, pk=comparison_pk, user=request.user)
+
+        # Create context for PDF template
+        context = {
+            'comparison': comparison,
+        }
+
+        # Render HTML template (we'll create this next)
+        html_string = render_to_string('reports/comparison_report_pdf.html', context)
+
+        # Convert to PDF using WeasyPrint
+        html = HTML(string=html_string)
+        pdf = html.write_pdf()
+
+        # Create HTTP response
+        response = HttpResponse(pdf, content_type='application/pdf')
+        filename = f"IntegriPic_Comparison_{comparison.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+        logger.info(f"User {request.user.username} exported PDF for comparison {comparison.id}")
+        messages.success(request, f"Report exported successfully: {filename}")
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Error exporting PDF for comparison {comparison_pk}: {str(e)}")
+        messages.error(request, f"Error exporting PDF: {str(e)}")
+        return redirect('analysis:comparison_detail', pk=comparison_pk)

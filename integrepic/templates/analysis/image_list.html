@@ -3,142 +3,157 @@
 {% block title %}My Images - IntegriPic{% endblock %}
 
 {% block content %}
-<div class="main-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="bi bi-images"></i> My Images</h2>
-            <p class="text-muted">{{ images|length }} image{% if images|length != 1 %}s{% endif %} uploaded</p>
+<!-- Page header -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-5 border-bottom pb-3">
+    <div>
+        <h1 class="fw-bolder mb-1 text-primary">My Asset Gallery</h1>
+        <p class="mb-0 fw-medium text-muted" style="font-size: 0.95rem;">
+            You have uniquely uploaded <span class="badge bg-secondary-subtle text-body border">{{ images|length }}</span> asset{% if images|length != 1 %}s{% endif %}
+        </p>
+    </div>
+    <a href="{% url 'analysis:upload' %}" class="btn btn-primary px-4 py-2 fw-medium shadow-sm" style="border-radius: 50px;">
+        <i class="bi bi-cloud-upload me-2"></i> Upload New Asset
+    </a>
+</div>
+
+{% if images %}
+    <!-- Filter and Sort Options -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-8">
+            <div class="input-group shadow-sm" style="border-radius: 50px; overflow: hidden; border: 1px solid var(--bs-border-color);">
+                <span class="input-group-text bg-body border-0 ps-4">
+                    <i class="bi bi-search text-primary"></i>
+                </span>
+                <input type="text" class="form-control border-0 py-2 ps-2 shadow-none bg-body text-body" id="searchInput" placeholder="Search by exact filename...">
+            </div>
         </div>
-        <a href="{% url 'analysis:upload' %}" class="btn btn-primary">
-            <i class="bi bi-cloud-upload"></i> Upload New Image
-        </a>
+        <div class="col-md-4">
+            <select class="form-select shadow-sm py-2 bg-body text-body" id="sortSelect" style="border-radius: 50px; border-color: var(--bs-border-color);">
+                <option value="newest">Sort by: Newest First</option>
+                <option value="oldest">Sort by: Oldest First</option>
+                <option value="name">Sort by: Name A-Z</option>
+                <option value="size">Sort by: File Size</option>
+            </select>
+        </div>
     </div>
 
-    {% if images %}
-        <!-- Filter and Sort Options -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-search"></i></span>
-                    <input type="text" class="form-control" id="searchInput" placeholder="Search images by filename...">
+    <!-- Images Grid -->
+    <div class="row g-4" id="imagesGrid">
+        {% for image in images %}
+        <div class="col-md-6 col-lg-4 image-item"
+             data-filename="{{ image.filename|lower }}"
+             data-date="{{ image.uploaded_at.isoformat }}"
+             data-size="{{ image.file_size }}">
+            <div class="card h-100 border-0 shadow-sm" style="border-radius: 16px; overflow: hidden; transition: transform 0.25s, box-shadow 0.25s;">
+                <!-- Thumbnail -->
+                <div class="position-relative">
+                    <img src="{{ image.image.url }}" class="card-img-top w-100" style="height: 190px; object-fit: cover;" alt="{{ image.filename }}">
+                    
+                    <!-- Gradient overlay on image -->
+                    <div class="position-absolute w-100 h-100 top-0 left-0" style="background: linear-gradient(to bottom, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%);"></div>
+                    
+                    <div class="position-absolute top-0 end-0 m-3">
+                        {% if image.analyses.exists %}
+                            <span class="badge shadow-sm bg-success">
+                                <i class="bi bi-check-circle me-1"></i>Analyzed
+                            </span>
+                        {% else %}
+                            <span class="badge shadow-sm bg-warning text-dark">
+                                <i class="bi bi-clock me-1"></i>Pending
+                            </span>
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-6">
-                <select class="form-select" id="sortSelect">
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="name">Name A-Z</option>
-                    <option value="size">File Size</option>
-                </select>
-            </div>
-        </div>
 
-        <!-- Images Grid -->
-        <div class="row" id="imagesGrid">
-            {% for image in images %}
-                <div class="col-md-6 col-lg-4 mb-4 image-item" data-filename="{{ image.filename|lower }}" data-date="{{ image.uploaded_at.isoformat }}" data-size="{{ image.file_size }}">
-                    <div class="card h-100">
-                        <div class="position-relative">
-                            <img src="{{ image.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ image.filename }}">
-                            <div class="position-absolute top-0 end-0 m-2">
-                                {% if image.analyses.exists %}
-                                    <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> Analyzed
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-warning">
-                                        <i class="bi bi-clock"></i> Pending
-                                    </span>
-                                {% endif %}
+                <div class="card-body p-4 position-relative z-index-1" style="margin-top: -30px;">
+                    <h5 class="fw-bold mb-3 text-white text-truncate text-shadow-sm" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);" title="{{ image.filename }}">
+                        {{ image.filename|truncatechars:25 }}
+                    </h5>
+                    
+                    <div class="p-3 bg-body rounded-3 shadow-sm mb-3 mt-1 border">
+                        <div class="row text-center small fw-medium text-muted">
+                            <div class="col-6 border-end">
+                                <i class="bi bi-calendar-event d-block mb-1 text-primary fs-5"></i>
+                                {{ image.uploaded_at|date:"M j, Y" }}
                             </div>
-                        </div>
-                        
-                        <div class="card-body">
-                            <h6 class="card-title" title="{{ image.filename }}">
-                                {{ image.filename|truncatechars:25 }}
-                            </h6>
-                            
-                            <div class="row text-center small text-muted mb-3">
-                                <div class="col-6">
-                                    <i class="bi bi-calendar"></i><br>
-                                    {{ image.uploaded_at|date:"M j, Y" }}
-                                </div>
-                                <div class="col-6">
-                                    <i class="bi bi-file-earmark"></i><br>
-                                    {{ image.file_size|filesizeformat }}
-                                </div>
-                            </div>
-                            
-                            <div class="d-flex gap-2">
-                                <a href="{% url 'analysis:image_detail' image.id %}" class="btn btn-primary btn-sm flex-fill">
-                                    <i class="bi bi-eye"></i> View
-                                </a>
-                                {% if not image.analyses.exists %}
-                                    <a href="{% url 'analysis:analyze_image' image.id %}" class="btn btn-success btn-sm flex-fill">
-                                        <i class="bi bi-search"></i> Analyze
-                                    </a>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="card-footer bg-transparent">
-                            <div class="row text-center small">
-                                <div class="col-4">
-                                    <span class="badge bg-light text-dark">
-                                        <i class="bi bi-search"></i> {{ image.analyses.count }}
-                                    </span>
-                                    <br><small class="text-muted">Analyses</small>
-                                </div>
-                                <div class="col-4">
-                                    <span class="badge bg-light text-dark">
-                                        <i class="bi bi-aspect-ratio"></i> {{ image.comparisons_as_image1.count|add:image.comparisons_as_image2.count }}
-                                    </span>
-                                    <br><small class="text-muted">Comparisons</small>
-                                </div>
-                                <div class="col-4">
-                                    <span class="badge bg-light text-dark">
-                                        <i class="bi bi-file-text"></i> {{ image.analysis_reports.count }}
-                                    </span>
-                                    <br><small class="text-muted">Reports</small>
-                                </div>
+                            <div class="col-6">
+                                <i class="bi bi-hdd-network d-block mb-1 text-primary fs-5"></i>
+                                {{ image.file_size|filesizeformat }}
                             </div>
                         </div>
                     </div>
+
+                    <div class="d-flex gap-2 mt-auto">
+                        <a href="{% url 'analysis:image_detail' image.id %}" class="btn btn-outline-primary fw-medium flex-fill" style="border-radius: 8px;">
+                            <i class="bi bi-eye me-1"></i> Inspect
+                        </a>
+                        {% if not image.analyses.exists %}
+                        <a href="{% url 'analysis:analyze_image' image.id %}" class="btn btn-primary fw-medium flex-fill" style="border-radius: 8px;">
+                            <i class="bi bi-search me-1"></i> Execute
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
-            {% endfor %}
-        </div>
 
-        <!-- No Results Message -->
-        <div id="noResults" class="text-center py-5" style="display: none;">
-            <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
-            <h4 class="mt-3 text-muted">No images found</h4>
-            <p class="text-muted">Try adjusting your search criteria</p>
+                <div class="card-footer bg-body-secondary border-0 py-3 mt-auto">
+                    <div class="row text-center small">
+                        <div class="col-4">
+                            <div class="fw-bold text-body fs-6">{{ image.analyses.count }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem; text-transform: uppercase;">Analyses</div>
+                        </div>
+                        <div class="col-4 border-start border-end">
+                            <div class="fw-bold text-body fs-6">{{ image.comparisons_as_image1.count|add:image.comparisons_as_image2.count }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem; text-transform: uppercase;">Compares</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold text-body fs-6">{{ image.analysis_reports.count }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem; text-transform: uppercase;">Reports</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+        {% endfor %}
+    </div>
 
-    {% else %}
-        <!-- Empty State -->
-        <div class="text-center py-5">
-            <i class="bi bi-images text-muted" style="font-size: 4rem;"></i>
-            <h3 class="mt-3 text-muted">No Images Yet</h3>
-            <p class="text-muted">Upload your first image to start analyzing</p>
-            <a href="{% url 'analysis:upload' %}" class="btn btn-primary">
-                <i class="bi bi-cloud-upload"></i> Upload Image
-            </a>
+    <!-- No Results Message -->
+    <div id="noResults" class="card border-0 shadow-sm text-center py-5 mt-4" style="border-radius: 16px; display: none;">
+        <div class="stat-icon blue mx-auto mb-3" style="width: 70px; height: 70px; font-size: 1.8rem; border-radius: 20px;">
+            <i class="bi bi-search"></i>
         </div>
-    {% endif %}
-</div>
+        <h4 class="fw-bold mb-2">No images match your search</h4>
+        <p class="text-muted">Try adjusting your search criteria or clearing the input.</p>
+    </div>
+
+{% else %}
+    <!-- Empty State -->
+    <div class="card border-0 shadow-sm text-center py-5 mt-4" style="border-radius: 16px;">
+        <div class="stat-icon blue mx-auto mb-4" style="width: 80px; height: 80px; font-size: 2.2rem; border-radius: 20px;">
+            <i class="bi bi-images"></i>
+        </div>
+        <h3 class="fw-bold mb-2">Your Asset Gallery is Empty</h3>
+        <p class="text-muted mb-4 mx-auto" style="max-width: 400px;">Upload image files to safely store them, investigate for EXIF anomalies, or perform deep forensic steganography checks.</p>
+        <a href="{% url 'analysis:upload' %}" class="btn btn-primary px-4 py-2 fw-medium shadow-sm" style="border-radius: 50px;">
+            <i class="bi bi-cloud-upload me-2"></i> Upload Your First Asset
+        </a>
+    </div>
+{% endif %}
+
+<style>
+    .card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 // Search functionality
 document.getElementById('searchInput').addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase();
-    const items = document.querySelectorAll('.image-item');
-    let visibleCount = 0;
-    
-    items.forEach(item => {
-        const filename = item.dataset.filename;
+    var searchTerm = this.value.toLowerCase();
+    var items = document.querySelectorAll('.image-item');
+    var visibleCount = 0;
+
+    items.forEach(function(item) {
+        var filename = item.dataset.filename;
         if (filename.includes(searchTerm)) {
             item.style.display = 'block';
             visibleCount++;
@@ -146,33 +161,29 @@ document.getElementById('searchInput').addEventListener('input', function() {
             item.style.display = 'none';
         }
     });
-    
+
     document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
 });
 
 // Sort functionality
-document.getElementById('sortSelect').addEventListener('change', function() {
-    const sortBy = this.value;
-    const grid = document.getElementById('imagesGrid');
-    const items = Array.from(document.querySelectorAll('.image-item'));
-    
-    items.sort((a, b) => {
-        switch(sortBy) {
-            case 'newest':
-                return new Date(b.dataset.date) - new Date(a.dataset.date);
-            case 'oldest':
-                return new Date(a.dataset.date) - new Date(b.dataset.date);
-            case 'name':
-                return a.dataset.filename.localeCompare(b.dataset.filename);
-            case 'size':
-                return parseInt(b.dataset.size) - parseInt(a.dataset.size);
-            default:
-                return 0;
-        }
+const sortSelect = document.getElementById('sortSelect');
+if(sortSelect){
+    sortSelect.addEventListener('change', function() {
+        var sortBy = this.value;
+        var grid = document.getElementById('imagesGrid');
+        var items = Array.from(document.querySelectorAll('.image-item'));
+
+        items.sort(function(a, b) {
+            switch(sortBy) {
+                case 'newest': return new Date(b.dataset.date) - new Date(a.dataset.date);
+                case 'oldest': return new Date(a.dataset.date) - new Date(b.dataset.date);
+                case 'name': return a.dataset.filename.localeCompare(b.dataset.filename);
+                case 'size': return parseInt(b.dataset.size) - parseInt(a.dataset.size);
+                default: return 0;
+            }
+        });
+        items.forEach(function(item) { grid.appendChild(item); });
     });
-    
-    // Reorder items in DOM
-    items.forEach(item => grid.appendChild(item));
-});
+}
 </script>
 {% endblock %}

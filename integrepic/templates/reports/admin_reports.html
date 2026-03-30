@@ -1,81 +1,73 @@
 {% extends 'base.html' %}
 
-{% block title %}Admin Reports - IntegriPic{% endblock %}
+{% block title %}Admin Reports Dashboard - IntegriPic{% endblock %}
 
 {% block content %}
-<div class="main-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="bi bi-gear"></i> Admin Reports Dashboard</h2>
-            <p class="text-muted">View all user reports and system analytics</p>
-        </div>
-        <div class="btn-group">
-            <a href="{% url 'admin:index' %}" class="btn btn-outline-primary">
-                <i class="bi bi-tools"></i> Admin Panel
-            </a>
-            <a href="{% url 'reports:system_stats' %}" class="btn btn-primary">
-                <i class="bi bi-graph-up"></i> System Stats
-            </a>
+<div class="d-flex justify-content-between align-items-center mb-5 border-bottom border-light pb-3">
+    <div>
+        <h1 class="fw-bolder mb-1" style="background: -webkit-linear-gradient(45deg, #ef4444, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Admin Dashboard</h1>
+        <p class="mb-0 fw-medium" style="color: var(--text-muted); font-size: 0.95rem;">System-wide overview and report management</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'reports:system_stats' %}" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 50px;">
+            <i class="bi bi-graph-up me-2"></i> System Stats
+        </a>
+        <a href="{% url 'admin:index' %}" class="btn btn-primary px-4 py-2 shadow-sm" style="border-radius: 50px;">
+            <i class="bi bi-tools me-2"></i> Admin Panel
+        </a>
+    </div>
+</div>
+
+<!-- System Overview -->
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center h-100 p-4" style="border-radius: 16px;">
+            <div class="stat-icon blue mx-auto mb-3" style="width: 56px; height: 56px; border-radius: 14px; font-size: 1.6rem;"><i class="bi bi-people"></i></div>
+            <h2 class="fw-bolder mb-0 text-dark">{{ stats.total_users }}</h2>
+            <div class="small fw-semibold text-muted text-uppercase letter-spacing-1 mt-1">Total Users</div>
         </div>
     </div>
-
-    <!-- System Overview -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <i class="bi bi-people text-primary" style="font-size: 2rem;"></i>
-                    <h3 class="mt-2">{{ stats.total_users }}</h3>
-                    <p class="text-muted mb-0">Total Users</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <i class="bi bi-images text-success" style="font-size: 2rem;"></i>
-                    <h3 class="mt-2">{{ stats.total_images }}</h3>
-                    <p class="text-muted mb-0">Images Uploaded</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <i class="bi bi-search text-warning" style="font-size: 2rem;"></i>
-                    <h3 class="mt-2">{{ stats.total_analyses }}</h3>
-                    <p class="text-muted mb-0">Analyses Done</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <i class="bi bi-file-earmark-text text-info" style="font-size: 2rem;"></i>
-                    <h3 class="mt-2">{{ stats.total_reports }}</h3>
-                    <p class="text-muted mb-0">Reports Generated</p>
-                </div>
-            </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center h-100 p-4" style="border-radius: 16px;">
+            <div class="stat-icon green mx-auto mb-3" style="width: 56px; height: 56px; border-radius: 14px; font-size: 1.6rem;"><i class="bi bi-images"></i></div>
+            <h2 class="fw-bolder mb-0 text-success">{{ stats.total_images }}</h2>
+            <div class="small fw-semibold text-muted text-uppercase letter-spacing-1 mt-1">Images Indexed</div>
         </div>
     </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center h-100 p-4" style="border-radius: 16px;">
+            <div class="stat-icon yellow mx-auto mb-3" style="width: 56px; height: 56px; border-radius: 14px; font-size: 1.6rem;"><i class="bi bi-search"></i></div>
+            <h2 class="fw-bolder mb-0 text-warning">{{ stats.total_analyses }}</h2>
+            <div class="small fw-semibold text-muted text-uppercase letter-spacing-1 mt-1">Total Analyses</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm text-center h-100 p-4" style="border-radius: 16px;">
+            <div class="stat-icon purple mx-auto mb-3" style="width: 56px; height: 56px; border-radius: 14px; font-size: 1.6rem;"><i class="bi bi-file-earmark-text"></i></div>
+            <h2 class="fw-bolder mb-0" style="color: #8b5cf6;">{{ stats.total_reports }}</h2>
+            <div class="small fw-semibold text-muted text-uppercase letter-spacing-1 mt-1">Reports Issued</div>
+        </div>
+    </div>
+</div>
 
-    <!-- Filters -->
-    <div class="row mb-4">
+<!-- Filters -->
+<div class="card border-0 shadow-sm p-4 mb-4" style="border-radius: 16px;">
+    <div class="row g-3">
         <div class="col-md-3">
-            <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" class="form-control" id="searchInput" placeholder="Search by user or title...">
+            <div class="input-group" style="border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
+                <span class="input-group-text bg-white border-0 ps-3 text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control border-0 py-2 shadow-none" id="searchInput" placeholder="Search title/user...">
             </div>
         </div>
         <div class="col-md-2">
-            <select class="form-select" id="typeFilter">
+            <select class="form-select border-0 py-2" id="typeFilter" style="border-radius: 12px; background: #f8fafc; border: 1px solid var(--border)!important;">
                 <option value="">All Types</option>
-                <option value="analysis">Analysis Reports</option>
-                <option value="comparison">Comparison Reports</option>
+                <option value="analysis">Analysis</option>
+                <option value="comparison">Comparison</option>
             </select>
         </div>
         <div class="col-md-2">
-            <select class="form-select" id="userFilter">
+            <select class="form-select border-0 py-2" id="userFilter" style="border-radius: 12px; background: #f8fafc; border: 1px solid var(--border)!important;">
                 <option value="">All Users</option>
                 {% for user in users %}
                     <option value="{{ user.username }}">{{ user.username }}</option>
@@ -83,7 +75,7 @@
             </select>
         </div>
         <div class="col-md-2">
-            <select class="form-select" id="dateFilter">
+            <select class="form-select border-0 py-2" id="dateFilter" style="border-radius: 12px; background: #f8fafc; border: 1px solid var(--border)!important;">
                 <option value="">All Time</option>
                 <option value="today">Today</option>
                 <option value="week">This Week</option>
@@ -91,123 +83,111 @@
             </select>
         </div>
         <div class="col-md-3">
-            <select class="form-select" id="sortSelect">
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="user">By User</option>
-                <option value="type">By Type</option>
+            <select class="form-select border-0 py-2" id="sortSelect" style="border-radius: 12px; background: #f8fafc; border: 1px solid var(--border)!important;">
+                <option value="newest">Sort: Newest First</option>
+                <option value="oldest">Sort: Oldest First</option>
+                <option value="user">Sort: By User</option>
+                <option value="type">Sort: By Type</option>
             </select>
         </div>
     </div>
-
-    <!-- Reports Table -->
-    {% if reports %}
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="bi bi-table"></i> All Reports ({{ reports|length }})</h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Type</th>
-                                <th>Title</th>
-                                <th>User</th>
-                                <th>Created</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reportsTable">
-                            {% for report in reports %}
-                                <tr class="report-row" 
-                                    data-type="{{ report.report_type }}" 
-                                    data-user="{{ report.user.username|lower }}"
-                                    data-title="{{ report.title|lower }}"
-                                    data-date="{{ report.created_at.isoformat }}">
-                                    <td>
-                                        {% if report.report_type == 'analysis' %}
-                                            <span class="badge bg-primary">
-                                                <i class="bi bi-search"></i> Analysis
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-warning">
-                                                <i class="bi bi-aspect-ratio"></i> Comparison
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <strong>{{ report.title|truncatechars:40 }}</strong>
-                                        {% if report.description %}
-                                            <br><small class="text-muted">{{ report.description|truncatechars:60 }}</small>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <i class="bi bi-person-circle me-2"></i>
-                                            <div>
-                                                <strong>{{ report.user.get_full_name|default:report.user.username }}</strong>
-                                                <br><small class="text-muted">{{ report.user.email }}</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <strong>{{ report.created_at|date:"M j, Y" }}</strong>
-                                        <br><small class="text-muted">{{ report.created_at|time:"g:i A" }}</small>
-                                    </td>
-                                    <td>
-                                        <div class="btn-group-vertical btn-group-sm">
-                                            <a href="{% url 'reports:view_report' report.id %}" class="btn btn-outline-primary btn-sm">
-                                                <i class="bi bi-eye"></i> View
-                                            </a>
-                                            <a href="{% url 'reports:download_report' report.id %}" class="btn btn-outline-success btn-sm">
-                                                <i class="bi bi-download"></i> Download
-                                            </a>
-                                            {% if perms.reports.delete_analysisreport or perms.reports.delete_comparisonreport %}
-                                                <button class="btn btn-outline-danger btn-sm" onclick="deleteReport({{ report.id }}, '{{ report.report_type }}')">
-                                                    <i class="bi bi-trash"></i> Delete
-                                                </button>
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- No Results Message -->
-        <div id="noResults" class="text-center py-5" style="display: none;">
-            <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
-            <h4 class="mt-3 text-muted">No reports found</h4>
-            <p class="text-muted">Try adjusting your search or filter criteria</p>
-        </div>
-
-    {% else %}
-        <div class="text-center py-5">
-            <i class="bi bi-file-earmark-text text-muted" style="font-size: 4rem;"></i>
-            <h3 class="mt-3 text-muted">No Reports Yet</h3>
-            <p class="text-muted">No reports have been generated by any users</p>
-        </div>
-    {% endif %}
 </div>
+
+<!-- Reports Table -->
+{% if reports %}
+    <div class="card border-0 shadow-sm" style="border-radius: 16px; overflow: hidden;">
+        <div class="card-header bg-white border-bottom-0 pt-4 pb-3 px-4">
+            <h5 class="fw-bold mb-0"><i class="bi bi-table me-2 text-primary"></i> Master Report Ledger <span class="badge bg-light text-dark border ms-2">{{ reports|length }}</span></h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.95rem;">
+                    <thead class="bg-light text-muted small text-uppercase" style="letter-spacing: 0.5px;">
+                        <tr>
+                            <th class="ps-4 py-3 border-bottom-0">Type</th>
+                            <th class="py-3 border-bottom-0">Title & Desc</th>
+                            <th class="py-3 border-bottom-0">Author</th>
+                            <th class="py-3 border-bottom-0">Date</th>
+                            <th class="text-end pe-4 py-3 border-bottom-0">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportsTable" class="border-top-0">
+                        {% for report in reports %}
+                            <tr class="report-row" data-type="{{ report.report_type }}" data-user="{{ report.user.username|lower }}" data-title="{{ report.title|lower }}" data-date="{{ report.created_at.isoformat }}">
+                                <td class="ps-4 text-nowrap">
+                                    {% if report.report_type == 'analysis' %}
+                                        <span class="badge" style="background: rgba(59,130,246,0.1); color: #3b82f6;"><i class="bi bi-search me-1"></i> Analysis</span>
+                                    {% else %}
+                                        <span class="badge" style="background: rgba(245,158,11,0.1); color: #f59e0b;"><i class="bi bi-aspect-ratio me-1"></i> Comparison</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ report.title|truncatechars:40 }}</div>
+                                    {% if report.description %}
+                                        <div class="small text-muted text-truncate" style="max-width: 250px;">{{ report.description }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center fw-bold text-muted" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                            {{ report.user.username|first|upper }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark">{{ report.user.get_full_name|default:report.user.username }}</div>
+                                            <div class="small text-muted">{{ report.user.email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-medium text-dark">{{ report.created_at|date:"M j, Y" }}</div>
+                                    <div class="small text-muted">{{ report.created_at|time:"g:i A" }}</div>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="btn-group shadow-sm">
+                                        <a href="{% url 'reports:view_report' report.id %}" class="btn btn-sm btn-light border-end" title="View"><i class="bi bi-eye text-primary"></i></a>
+                                        <a href="{% url 'reports:download_report' report.id %}" class="btn btn-sm btn-light border-end" title="Download"><i class="bi bi-download text-success"></i></a>
+                                        {% if perms.reports.delete_analysisreport or perms.reports.delete_comparisonreport %}
+                                            <button class="btn btn-sm btn-light" onclick="deleteReport({{ report.id }}, '{{ report.report_type }}')" title="Delete"><i class="bi bi-trash text-danger"></i></button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- No Results Message -->
+    <div id="noResults" class="card border-0 shadow-sm text-center py-5 mt-4" style="border-radius: 16px; display: none;">
+        <div class="stat-icon blue mx-auto mb-3" style="width: 60px; height: 60px; font-size: 1.5rem; border-radius: 16px;"><i class="bi bi-search"></i></div>
+        <h5 class="fw-bold mb-1">No matches found</h5>
+        <p class="text-muted small">Try a different combination of filters.</p>
+    </div>
+
+{% else %}
+    <div class="card border-0 shadow-sm text-center py-5" style="border-radius: 16px;">
+        <div class="stat-icon blue mx-auto mb-4" style="width: 80px; height: 80px; font-size: 2.2rem; border-radius: 20px;"><i class="bi bi-file-earmark-text"></i></div>
+        <h3 class="fw-bold mb-2">System Ledger Empty</h3>
+        <p class="text-muted mb-0">No reports have been generated by any registered users on the system yet.</p>
+    </div>
+{% endif %}
 
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-warning"></i> Confirm Deletion</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i> Confirm Elimination</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete this report? This action cannot be undone.</p>
+            <div class="modal-body py-4">
+                <p class="mb-0 text-muted fs-6">Are you certain you want to permanently delete this report from the system database? This destructive action cannot be undone.</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmDelete">Delete Report</button>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light px-4 shadow-sm" style="border-radius: 8px;" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger px-4 shadow-sm" style="border-radius: 8px;" id="confirmDelete">Delete Record</button>
             </div>
         </div>
     </div>
@@ -219,7 +199,6 @@
 let currentReportId = null;
 let currentReportType = null;
 
-// Filter and search functionality
 function filterReports() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const typeFilter = document.getElementById('typeFilter').value;
@@ -244,13 +223,9 @@ function filterReports() {
         const matchesUser = !userFilter || user === userFilter;
         
         let matchesDate = true;
-        if (dateFilter === 'today') {
-            matchesDate = date >= today;
-        } else if (dateFilter === 'week') {
-            matchesDate = date >= weekAgo;
-        } else if (dateFilter === 'month') {
-            matchesDate = date >= monthAgo;
-        }
+        if (dateFilter === 'today') matchesDate = date >= today;
+        else if (dateFilter === 'week') matchesDate = date >= weekAgo;
+        else if (dateFilter === 'month') matchesDate = date >= monthAgo;
         
         if (matchesSearch && matchesType && matchesUser && matchesDate) {
             row.style.display = '';
@@ -263,7 +238,6 @@ function filterReports() {
     document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
 }
 
-// Sort functionality
 function sortReports() {
     const sortBy = document.getElementById('sortSelect').value;
     const tbody = document.getElementById('reportsTable');
@@ -271,31 +245,22 @@ function sortReports() {
     
     rows.sort((a, b) => {
         switch(sortBy) {
-            case 'newest':
-                return new Date(b.dataset.date) - new Date(a.dataset.date);
-            case 'oldest':
-                return new Date(a.dataset.date) - new Date(b.dataset.date);
-            case 'user':
-                return a.dataset.user.localeCompare(b.dataset.user);
-            case 'type':
-                return a.dataset.type.localeCompare(b.dataset.type);
-            default:
-                return 0;
+            case 'newest': return new Date(b.dataset.date) - new Date(a.dataset.date);
+            case 'oldest': return new Date(a.dataset.date) - new Date(b.dataset.date);
+            case 'user': return a.dataset.user.localeCompare(b.dataset.user);
+            case 'type': return a.dataset.type.localeCompare(b.dataset.type);
+            default: return 0;
         }
     });
-    
     rows.forEach(row => tbody.appendChild(row));
 }
 
-// Delete report functionality
 function deleteReport(reportId, reportType) {
     currentReportId = reportId;
     currentReportType = reportType;
-    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    modal.show();
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
 }
 
-// Event listeners
 document.getElementById('searchInput').addEventListener('input', filterReports);
 document.getElementById('typeFilter').addEventListener('change', filterReports);
 document.getElementById('userFilter').addEventListener('change', filterReports);
@@ -304,8 +269,6 @@ document.getElementById('sortSelect').addEventListener('change', sortReports);
 
 document.getElementById('confirmDelete').addEventListener('click', function() {
     if (currentReportId && currentReportType) {
-        // Here you would typically send an AJAX request to delete the report
-        // For now, we'll just reload the page
         window.location.href = `{% url 'reports:delete_report' 0 %}`.replace('0', currentReportId) + `?type=${currentReportType}`;
     }
 });

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Image Comparison Report - {{ comparison.image1_filename }} vs {{ comparison.image2_filename }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+            color: white;
+            padding: 40px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            background-color: #f3f4f6;
+            padding: 15px 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #1f2937;
+            border-left: 5px solid #8b5cf6;
+            margin-bottom: 20px;
+            margin-top: 20px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            padding: 15px;
+            background-color: #f9fafb;
+            border-radius: 8px;
+            border-left: 3px solid #8b5cf6;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            color: #4b5563;
+            font-size: 1.05em;
+            word-break: break-all;
+        }
+
+        .comparison-result {
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            background-color: #f3f4f6;
+        }
+
+        .result-identical {
+            background-color: #d1fae5;
+            border-left: 4px solid #10b981;
+        }
+
+        .result-different {
+            background-color: #fef08a;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .metric-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+
+        .metric-card {
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .metric-label {
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .metric-value {
+            font-size: 1.3em;
+            color: #8b5cf6;
+            font-weight: bold;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .table th {
+            background-color: #8b5cf6;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        .table td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+
+        .alert {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background-color: #eff6ff;
+            border-left-color: #3b82f6;
+            color: #1e40af;
+        }
+
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9em;
+        }
+
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- COVER PAGE -->
+    <div class="header">
+        <h1>🔀 IntegriPic</h1>
+        <p>Image Comparison Report</p>
+    </div>
+
+    <div class="content">
+        <div class="section">
+            <h2 style="text-align: center; margin-bottom: 20px;">Image Comparison Analysis</h2>
+            <p style="text-align: center; color: #6b7280; margin-bottom: 30px;">
+                Detailed comparison of two images analyzing similarity, differences, and forensic properties.
+            </p>
+
+            <div class="comparison-result {% if comparison.are_identical %}result-identical{% else %}result-different{% endif %}">
+                <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">
+                    {% if comparison.are_identical %}
+                    ✅ Images are IDENTICAL
+                    {% else %}
+                    ⚠️ Images have DIFFERENCES
+                    {% endif %}
+                </div>
+                <div style="font-size: 1em;">
+                    Similarity Score: <strong>{{ comparison.similarity_score }}%</strong>
+                </div>
+            </div>
+
+            <div class="section-title">📋 Image Information</div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Image 1 - Filename</div>
+                    <div class="info-value">{{ comparison.image1_filename }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Image 2 - Filename</div>
+                    <div class="info-value">{{ comparison.image2_filename }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Image 1 - Size</div>
+                    <div class="info-value">{{ comparison.image1_size|filesizeformat }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Image 2 - Size</div>
+                    <div class="info-value">{{ comparison.image2_size|filesizeformat }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- DETAILED COMPARISON -->
+    <div class="content">
+        <div class="section">
+            <div class="section-title">📊 Comparison Metrics</div>
+
+            {% if comparison.comparison_results %}
+                <div class="metric-row">
+                    <div class="metric-card">
+                        <div class="metric-label">Image 1 Hash</div>
+                        <div class="metric-value" style="font-size: 0.8em; word-break: break-all;">{{ comparison.image1_hash }}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Image 2 Hash</div>
+                        <div class="metric-value" style="font-size: 0.8em; word-break: break-all;">{{ comparison.image2_hash }}</div>
+                    </div>
+                </div>
+
+                {% if comparison.comparison_results.comparison_info %}
+                <div class="section-title">🔍 Pixel-Level Analysis</div>
+                <table class="table">
+                    <tr>
+                        <td><strong>Different Pixels</strong></td>
+                        <td>{{ comparison.comparison_results.comparison_info.different_pixels|default:"N/A" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Different Percentage</strong></td>
+                        <td>{{ comparison.comparison_results.comparison_info.different_percentage|default:"0" }}%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Maximum Difference</strong></td>
+                        <td>{{ comparison.comparison_results.comparison_info.max_difference|default:"0" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Average Difference</strong></td>
+                        <td>{{ comparison.comparison_results.comparison_info.avg_difference|default:"0" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Size Matched</strong></td>
+                        <td>{{ comparison.comparison_results.comparison_info.size_matched|yesno:"Yes,No" }}</td>
+                    </tr>
+                </table>
+                {% endif %}
+
+                {% if comparison.comparison_results.color_analysis %}
+                <div class="section-title">🎨 Color Analysis</div>
+                <table class="table">
+                    <tr>
+                        <td><strong>Red Channel Similarity</strong></td>
+                        <td>{{ comparison.comparison_results.color_analysis.red_channel_similarity|default:"N/A" }}%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Green Channel Similarity</strong></td>
+                        <td>{{ comparison.comparison_results.color_analysis.green_channel_similarity|default:"N/A" }}%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Blue Channel Similarity</strong></td>
+                        <td>{{ comparison.comparison_results.color_analysis.blue_channel_similarity|default:"N/A" }}%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Overall Color Similarity</strong></td>
+                        <td>{{ comparison.comparison_results.color_analysis.overall_color_similarity|default:"N/A" }}%</td>
+                    </tr>
+                </table>
+                {% endif %}
+
+                {% if comparison.comparison_results.enhanced_comparison %}
+                <div class="section-title">⚙️ Enhanced Properties</div>
+                <table class="table">
+                    <tr>
+                        <td><strong>Brightness Difference</strong></td>
+                        <td>{{ comparison.comparison_results.enhanced_comparison.brightness_difference|default:"N/A" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sharpness Difference</strong></td>
+                        <td>{{ comparison.comparison_results.enhanced_comparison.sharpness_difference|default:"N/A" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Contrast Difference</strong></td>
+                        <td>{{ comparison.comparison_results.enhanced_comparison.contrast_difference|default:"N/A" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Same Device</strong></td>
+                        <td>{{ comparison.comparison_results.enhanced_comparison.same_device|yesno:"Yes,No" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Color Temperature Match</strong></td>
+                        <td>{{ comparison.comparison_results.enhanced_comparison.color_temperature_match|yesno:"Yes,No" }}</td>
+                    </tr>
+                </table>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    No detailed comparison results available. Please ensure both images were processed successfully.
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="section">
+            <div class="section-title">📝 Comparison Notes</div>
+            <div style="padding: 15px; background-color: #f9fafb; border-radius: 8px;">
+                {{ comparison.comparison_notes|default:"No additional notes provided." }}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">ℹ️ About This Report</div>
+            <p style="color: #6b7280; margin-bottom: 10px;">
+                This comparison report analyzes two images at the pixel level, comparing:
+            </p>
+            <ul style="margin-left: 20px; color: #6b7280;">
+                <li>Pixel-by-pixel differences</li>
+                <li>Color distribution (RGB channels)</li>
+                <li>Brightness and contrast levels</li>
+                <li>Image quality metrics</li>
+                <li>EXIF metadata properties</li>
+                <li>Structural similarity scores</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            <p>Generated by IntegriPic - Digital Forensics Analysis Tool</p>
+            <p>Report Generated: {{ "now"|date:"Y-m-d H:i:s" }} UTC</p>
+            <p style="margin-top: 20px; font-size: 0.8em;">
+                <em>This is a computer-generated report. For additional information, visit your IntegriPic account.</em>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
