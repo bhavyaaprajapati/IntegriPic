@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Link Analysis Graph - IntegriPic{% endblock %}
+
+{% block extra_css %}
+<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<style>
+    #mynetwork {
+        width: 100%;
+        height: 75vh;
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-surface);
+        border-radius: 12px;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Visual Network Link Analysis</h2>
+        <p class="mb-0 text-muted">Identify visually similar instances across all your uploaded evidence using Perceptual Hash clustering.</p>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4 fade-up-stagger stagger-1">
+    <div class="card-body p-1">
+        <div id="mynetwork"></div>
+    </div>
+    <div class="card-footer bg-transparent border-top border-secondary border-opacity-10 py-3">
+        <small class="text-muted"><i class="bi bi-info-circle me-1"></i> Nodes represent individual image cases. A physical connection drawn between two nodes means their cryptographic structural signatures are a near-perfect match (Hamming distance < 15), strongly suggesting they are modifications of the exact same source asset.</small>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+        var nodes = new vis.DataSet({{ nodes|safe }});
+        var edges = new vis.DataSet({{ edges|safe }});
+
+        var container = document.getElementById('mynetwork');
+
+        // Check theme for dynamic node coloring
+        var isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        var textColor = isDark ? '#f8fafc' : '#0f172a';
+        var nodeColor = isDark ? '#8b5cf6' : '#6366f1';
+        var edgeColor = isDark ? 'rgba(139, 92, 246, 0.4)' : 'rgba(99, 102, 241, 0.4)';
+
+        var data = {
+            nodes: nodes,
+            edges: edges
+        };
+
+        var options = {
+            nodes: {
+                shape: 'dot',
+                size: 25,
+                font: {
+                    size: 14,
+                    color: textColor,
+                    face: 'Inter, sans-serif',
+                    background: isDark ? 'rgba(15, 23, 42, 0.7)' : 'rgba(255, 255, 255, 0.7)'
+                },
+                borderWidth: 3,
+                color: {
+                    border: nodeColor,
+                    background: '#000000',
+                    highlight: {
+                        border: '#f59e0b',
+                        background: '#000000'
+                    }
+                },
+                shadow: {
+                    enabled: true,
+                    color: nodeColor,
+                    size: 15,
+                    x: 0,
+                    y: 0
+                }
+            },
+            edges: {
+                width: 3,
+                color: {
+                    color: edgeColor,
+                    highlight: '#f59e0b',
+                    hover: '#f59e0b'
+                },
+                smooth: {
+                    type: 'cubicBezier',
+                    forceDirection: 'none',
+                    roundness: 0.5
+                },
+                shadow: {
+                    enabled: true,
+                    color: edgeColor,
+                    size: 10,
+                    x: 0,
+                    y: 0
+                }
+            },
+            physics: {
+                forceAtlas2Based: {
+                    gravitationalConstant: -100,
+                    centralGravity: 0.01,
+                    springConstant: 0.08,
+                    springLength: 150,
+                    damping: 0.4,
+                    avoidOverlap: 1
+                },
+                solver: 'forceAtlas2Based',
+                stabilization: {
+                    iterations: 150
+                }
+            },
+            interaction: {
+                hover: true,
+                tooltipDelay: 100,
+                zoomView: true
+            }
+        };
+
+        var network = new vis.Network(container, data, options);
+    });
+</script>
+{% endblock %}

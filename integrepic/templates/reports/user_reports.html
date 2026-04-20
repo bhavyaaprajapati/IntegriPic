@@ -1,82 +1,98 @@
 {% extends 'base.html' %}
 
-{% block title %}My Reports - IntegriPic{% endblock %}
+{% block title %}Archive - IntegriPic Engine{% endblock %}
+
+{% block page_header %}
+<div class="d-flex align-items-center gap-3 mb-4 pb-2 border-bottom" style="border-color: var(--border-color) !important;">
+    <button onclick="window.history.back()" class="btn btn-sm btn-secondary d-flex align-items-center gap-2 px-3 fw-medium" style="border: none !important; background: rgba(255,255,255,0.03) !important;">
+        <i class="bi bi-arrow-left text-muted"></i> Back
+    </button>
+    <div class="text-muted fw-medium" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+        Data Forensics <span class="mx-2 opacity-30">/</span> <span class="text-main">Platform Reports</span>
+    </div>
+</div>
+{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-5 border-bottom border-light pb-3">
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 mt-1">
     <div>
-        <h1 class="fw-bolder mb-1" style="background: -webkit-linear-gradient(45deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">My Reports</h1>
-        <p class="mb-0 fw-medium" style="color: var(--text-muted); font-size: 0.95rem;">You have generated <span class="badge bg-light text-dark border">{{ reports|length }}</span> report{% if reports|length != 1 %}s{% endif %}</p>
+        <h2 class="fw-bolder mb-1 text-main" style="letter-spacing: -0.5px;">Archive Core</h2>
+        <p class="mb-0 fw-medium" style="color: var(--text-muted); font-size: 0.95rem;">
+            Access and download your encrypted intelligence reports.
+            <span class="badge ms-2" style="background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border-color);">{{ reports|length }} Total</span>
+        </p>
     </div>
-    <a href="{% url 'analysis:image_list' %}" class="btn btn-primary px-4 py-2 shadow-sm" style="border-radius: 50px;">
-        <i class="bi bi-images me-2"></i> View Images
+    <a href="{% url 'analysis:upload' %}" class="btn btn-primary px-4 py-2 shadow-sm d-flex align-items-center gap-2 mt-3 mt-md-0 fw-semibold">
+        <i class="bi bi-file-earmark-plus"></i> Generate New Report
     </a>
 </div>
 
 {% if reports %}
     <!-- Filter Options -->
-    <div class="card border-0 shadow-sm p-4 mb-5" style="border-radius: 16px;">
+    <div class="card border-0 shadow-sm p-4 mb-4" style="background: rgba(255,255,255,0.01);">
         <div class="row g-3">
             <div class="col-md-6">
-                <div class="input-group" style="border-radius: 12px; overflow: hidden; border: 1px solid var(--border);">
-                    <span class="input-group-text bg-white border-0 ps-4 text-primary"><i class="bi bi-search"></i></span>
-                    <input type="text" class="form-control border-0 py-3 shadow-none bg-white" id="searchInput" placeholder="Search reports by title...">
+                <div class="input-group" style="border-radius: 10px; overflow: hidden; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color);">
+                    <span class="input-group-text border-0 ps-4" style="background: transparent; color: var(--text-muted);"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control border-0 py-2 shadow-none text-main" style="background: transparent;" id="searchInput" placeholder="Search reports by designation...">
                 </div>
             </div>
             <div class="col-md-3">
-                <select class="form-select border-0 py-3" id="typeFilter" style="border-radius: 12px; border: 1px solid var(--border)!important; background-color: #f8fafc;">
-                    <option value="">Filter by: All Types</option>
-                    <option value="analysis">Analysis Reports</option>
-                    <option value="comparison">Comparison Reports</option>
+                <select class="form-select border-0 py-2 text-main" id="typeFilter" style="border-radius: 10px; border: 1px solid var(--border-color)!important; background-color: rgba(255,255,255,0.03);">
+                    <option value="" style="background: var(--bg-deep); color: white;">Filter by: All Formats</option>
+                    <option value="analysis" style="background: var(--bg-deep); color: white;">Analysis Intelligence</option>
+                    <option value="comparison" style="background: var(--bg-deep); color: white;">Differential Comparison</option>
                 </select>
             </div>
             <div class="col-md-3">
-                <select class="form-select border-0 py-3" id="sortSelect" style="border-radius: 12px; border: 1px solid var(--border)!important; background-color: #f8fafc;">
-                    <option value="newest">Sort: Newest First</option>
-                    <option value="oldest">Sort: Oldest First</option>
-                    <option value="title">Sort: Title A-Z</option>
+                <select class="form-select border-0 py-2 text-main" id="sortSelect" style="border-radius: 10px; border: 1px solid var(--border-color)!important; background-color: rgba(255,255,255,0.03);">
+                    <option value="newest" style="background: var(--bg-deep); color: white;">Sort: Chronological (Desc)</option>
+                    <option value="oldest" style="background: var(--bg-deep); color: white;">Sort: Chronological (Asc)</option>
+                    <option value="title" style="background: var(--bg-deep); color: white;">Sort: Designation (A-Z)</option>
                 </select>
             </div>
         </div>
     </div>
 
     <!-- Reports List -->
-    <div class="row g-4" id="reportsList">
+    <div class="row g-3" id="reportsList">
         {% for report in reports %}
             <div class="col-12 report-item" data-type="{{ report.report_type }}" data-title="{{ report.title|lower }}" data-date="{{ report.created_at.isoformat }}">
-                <div class="card border-0 shadow-sm" style="border-radius: 16px; transition: transform 0.2s, box-shadow 0.2s;">
+                <div class="card border-0 shadow-sm" style="transition: transform 0.2s, background 0.2s; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color) !important;">
                     <div class="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4">
                         <div class="d-flex align-items-start gap-4">
                             <div class="flex-shrink-0">
                                 {% if report.report_type == 'analysis' %}
-                                    <div class="stat-icon blue shadow-sm" style="width: 56px; height: 56px; border-radius: 16px; font-size: 1.5rem;">
+                                    <div class="shadow-sm d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border-radius: 12px; font-size: 1.4rem; background: rgba(59,130,246,0.1); color: var(--secondary); border: 1px solid rgba(59,130,246,0.2);">
                                         <i class="bi bi-search"></i>
                                     </div>
                                 {% else %}
-                                    <div class="stat-icon yellow shadow-sm" style="width: 56px; height: 56px; border-radius: 16px; font-size: 1.5rem;">
-                                        <i class="bi bi-aspect-ratio"></i>
+                                    <div class="shadow-sm d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border-radius: 12px; font-size: 1.4rem; background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2);">
+                                        <i class="bi bi-intersect"></i>
                                     </div>
                                 {% endif %}
                             </div>
                             <div>
                                 <div class="d-flex align-items-center gap-2 mb-1">
-                                    <h5 class="fw-bold mb-0 text-dark">{{ report.title }}</h5>
+                                    <h5 class="fw-bold mb-0 text-main" style="letter-spacing: -0.5px; font-size: 1.15rem;">{{ report.title }}</h5>
                                     {% if report.report_type == 'analysis' %}
-                                        <span class="badge" style="background: rgba(59,130,246,0.1); color: #3b82f6;">Analysis</span>
+                                        <span class="badge" style="background: rgba(59,130,246,0.1); color: var(--secondary); border: 1px solid rgba(59,130,246,0.2);">Analysis Profile</span>
                                     {% else %}
-                                        <span class="badge" style="background: rgba(245,158,11,0.1); color: #f59e0b;">Comparison</span>
+                                        <span class="badge" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.2);">Differential Mapping</span>
                                     {% endif %}
                                 </div>
                                 {% if report.description %}
-                                    <p class="text-muted mb-3" style="font-size: 0.95rem;">{{ report.description|truncatewords:20 }}</p>
+                                    <p class="text-muted mb-2" style="font-size: 0.9rem;">{{ report.description|truncatewords:20 }}</p>
                                 {% endif %}
-                                <div class="d-flex flex-wrap gap-3 small fw-medium" style="color: var(--text-muted);">
-                                    <span class="bg-light px-2 py-1 rounded"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ report.created_at|date:"M j, Y • g:i A" }}</span>
-                                    <span class="bg-light px-2 py-1 rounded">
+                                <div class="d-flex flex-wrap gap-2 small fw-medium text-muted mt-2">
+                                    <span class="px-2 py-1 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color);">
+                                        <i class="bi bi-calendar-event me-1"></i> {{ report.created_at|date:"M j, Y • g:i A" }}
+                                    </span>
+                                    <span class="px-2 py-1 rounded" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color);">
                                         {% if report.report_type == 'analysis' and report.analysis %}
-                                            <i class="bi bi-image me-1 text-success"></i> {{ report.analysis.original_filename|truncatechars:30 }}
+                                            <i class="bi bi-file-earmark-binary me-1"></i> {{ report.analysis.original_filename|truncatechars:35 }}
                                         {% elif report.report_type == 'comparison' and report.comparison %}
-                                            <i class="bi bi-images me-1 text-warning"></i> {{ report.comparison.image1_filename|truncatechars:15 }} vs {{ report.comparison.image2_filename|truncatechars:15 }}
+                                            <i class="bi bi-file-earmark-diff me-1"></i> {{ report.comparison.image1_filename|truncatechars:18 }} vs {{ report.comparison.image2_filename|truncatechars:18 }}
                                         {% endif %}
                                     </span>
                                 </div>
@@ -84,11 +100,11 @@
                         </div>
                         
                         <div class="d-flex flex-row flex-md-column gap-2 flex-shrink-0 mt-3 mt-md-0">
-                            <a href="{% url 'reports:view_report' report.id %}" class="btn btn-outline-primary fw-medium px-4" style="border-radius: 8px;">
-                                <i class="bi bi-eye me-2"></i> View Report
+                            <a href="{% url 'reports:view_report' report.report_type report.id %}" class="btn btn-secondary btn-sm fw-medium px-4 d-flex align-items-center gap-2 justify-content-center">
+                                <i class="bi bi-eye"></i> Inspect View
                             </a>
-                            <a href="{% url 'reports:download_report' report.id %}" class="btn btn-primary fw-medium px-4 shadow-sm" style="border-radius: 8px;">
-                                <i class="bi bi-download me-2"></i> Download HTML
+                            <a href="{% url 'reports:download_report' report.report_type report.id %}" class="btn btn-primary btn-sm fw-medium px-4 shadow-sm d-flex align-items-center gap-2 justify-content-center">
+                                <i class="bi bi-download"></i> Extract Pack
                             </a>
                         </div>
                     </div>
@@ -98,43 +114,51 @@
     </div>
 
     <!-- No Results Message -->
-    <div id="noResults" class="card border-0 shadow-sm text-center py-5 mt-4" style="border-radius: 16px; display: none;">
-        <div class="stat-icon blue mx-auto mb-3" style="width: 70px; height: 70px; font-size: 1.8rem; border-radius: 20px;">
+    <div id="noResults" class="card border-0 shadow-sm text-center py-5 mt-4" style="background: transparent; display: none;">
+        <div class="mx-auto mb-3 text-muted" style="font-size: 2.5rem; opacity: 0.5;">
             <i class="bi bi-search"></i>
         </div>
-        <h4 class="fw-bold mb-2">No reports found</h4>
-        <p class="text-muted">Try adjusting your search or filter criteria.</p>
+        <h5 class="fw-bold mb-2 text-main">No records correlate</h5>
+        <p class="text-muted mb-0">Adjust filtering parameters to expand search matrix.</p>
     </div>
 
 {% else %}
     <!-- Empty State -->
-    <div class="card border-0 shadow-sm text-center py-5 mt-4" style="border-radius: 16px;">
-        <div class="stat-icon blue mx-auto mb-4" style="width: 80px; height: 80px; font-size: 2.2rem; border-radius: 20px;">
-            <i class="bi bi-file-earmark-text"></i>
+    <div class="card border-0 shadow-sm text-center py-5 mt-4 glass-panel">
+        <div class="mx-auto mb-4 text-muted" style="font-size: 3.5rem; opacity: 0.4;">
+            <i class="bi bi-archive"></i>
         </div>
-        <h3 class="fw-bold mb-2">No Reports Generated Yet</h3>
-        <p class="text-muted mb-4 mx-auto" style="max-width: 400px;">Begin by uploading and analyzing images. You can then generate detailed forensic HTML reports based on the results.</p>
+        <h4 class="fw-bold mb-2 text-main">Archive is Empty</h4>
+        <p class="text-muted mb-4 mx-auto" style="max-width: 450px;">No intelligence reports have been generated yet. You must complete a secure analysis scan before extracting a report.</p>
         <div class="d-flex justify-content-center gap-3">
-            <a href="{% url 'analysis:upload' %}" class="btn btn-primary px-4 py-2 shadow-sm" style="border-radius: 50px;">
-                <i class="bi bi-cloud-upload me-2"></i> Upload Image
+            <a href="{% url 'analysis:upload' %}" class="btn btn-primary px-4 py-2 shadow-sm fw-semibold">
+                Initiate Secure Scan
             </a>
-            <a href="{% url 'analysis:image_list' %}" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 50px;">
-                <i class="bi bi-images me-2"></i> View Existing Images
+            <a href="{% url 'analysis:image_list' %}" class="btn btn-secondary px-4 py-2 fw-medium">
+                View Local Assets
             </a>
         </div>
     </div>
 {% endif %}
-<style>.report-item .card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.08) !important; }</style>
+<style>
+    .report-item .card:hover { 
+        transform: translateX(4px); 
+        background: var(--bg-surface-hover) !important;
+        border-right: 3px solid var(--primary) !important;
+    }
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.getElementById('searchInput').addEventListener('input', function() { filterReports(); });
-document.getElementById('typeFilter').addEventListener('change', function() { filterReports(); });
-document.getElementById('sortSelect').addEventListener('change', function() { sortReports(); });
+document.getElementById('searchInput')?.addEventListener('input', function() { filterReports(); });
+document.getElementById('typeFilter')?.addEventListener('change', function() { filterReports(); });
+document.getElementById('sortSelect')?.addEventListener('change', function() { sortReports(); });
 
 function filterReports() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const searchInput = document.getElementById('searchInput');
+    if(!searchInput) return;
+    const searchTerm = searchInput.value.toLowerCase();
     const typeFilter = document.getElementById('typeFilter').value;
     const items = document.querySelectorAll('.report-item');
     let visibleCount = 0;
@@ -157,7 +181,9 @@ function filterReports() {
 }
 
 function sortReports() {
-    const sortBy = document.getElementById('sortSelect').value;
+    const sortSelect = document.getElementById('sortSelect');
+    if(!sortSelect) return;
+    const sortBy = sortSelect.value;
     const container = document.getElementById('reportsList');
     const items = Array.from(document.querySelectorAll('.report-item'));
     

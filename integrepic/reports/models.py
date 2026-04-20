@@ -22,6 +22,11 @@ class AnalysisReport(models.Model):
     def __str__(self):
         return f"Report for {self.analysis.original_filename}"
 
+    @property
+    def report_type(self):
+        return 'analysis'
+
+
 
 class ComparisonReport(models.Model):
     """Model for generated comparison reports"""
@@ -41,3 +46,8 @@ class ComparisonReport(models.Model):
     
     def __str__(self):
         return f"Comparison Report: {self.comparison.image1_filename} vs {self.comparison.image2_filename}"
+
+    @property
+    def report_type(self):
+        return 'comparison'
+

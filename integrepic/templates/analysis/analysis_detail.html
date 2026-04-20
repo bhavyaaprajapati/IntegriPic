@@ -7,9 +7,24 @@
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <style>
     /* Styling tabs to look modern in both dark and light modes */
-    .nav-tabs { border-bottom-color: rgba(128,128,128,0.2); }
-    .nav-tabs .nav-link { color: var(--bs-secondary-color); font-weight: 500; border: none; padding: 1rem 1.5rem; transition: all 0.2s; }
-    .nav-tabs .nav-link:hover { color: var(--bs-body-color); border: none; background: rgba(128,128,128,0.05); }
+    .nav-tabs {
+        border-bottom-color: rgba(128, 128, 128, 0.2);
+    }
+
+    .nav-tabs .nav-link {
+        color: var(--bs-secondary-color);
+        font-weight: 500;
+        border: none;
+        padding: 1rem 1.5rem;
+        transition: all 0.2s;
+    }
+
+    .nav-tabs .nav-link:hover {
+        color: var(--bs-body-color);
+        border: none;
+        background: rgba(128, 128, 128, 0.05);
+    }
+
     .nav-tabs .nav-link.active {
         color: var(--primary-blue);
         background: transparent;
@@ -18,8 +33,8 @@
     }
 
     .detail-card-header {
-        background: rgba(128,128,128,0.05) !important;
-        border-bottom: 1px solid rgba(128,128,128,0.1) !important;
+        background: rgba(128, 128, 128, 0.05) !important;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.1) !important;
         font-weight: 600;
     }
 
@@ -31,6 +46,11 @@
     .plot-title {
         font-family: Arial, sans-serif !important;
         color: #1f2937 !important;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
 </style>
 {% endblock %}
@@ -47,8 +67,15 @@
         <a href="{% url 'reports:generate_analysis_report' analysis.id %}" class="btn btn-success btn-sm">
             <i class="bi bi-file-earmark-text me-1"></i> Generate Report
         </a>
-        <a href="{% url 'reports:export_analysis_pdf' analysis.id %}" class="btn btn-danger btn-sm" title="Download as PDF">
+        <a href="{% url 'reports:export_analysis_pdf' analysis.id %}" class="btn btn-danger btn-sm"
+            title="Download as PDF">
             <i class="bi bi-file-pdf me-1"></i> Export PDF
+        </a>
+        <a href="{% url 'reports:export_analysis_json' analysis.id %}" class="btn btn-outline-info btn-sm">
+            <i class="bi bi-filetype-json me-1"></i> Export JSON
+        </a>
+        <a href="{% url 'reports:export_analysis_csv' analysis.id %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-filetype-csv me-1"></i> Export CSV
         </a>
         {% endif %}
         <a href="{% url 'analysis:upload' %}" class="btn btn-outline-primary btn-sm">
@@ -72,7 +99,7 @@
         {% else %}
         <div class="stat-icon" style="background:#64748b;"><i class="bi bi-clock"></i></div>
         {% endif %}
-        
+
         <div class="flex-grow-1">
             <div class="fw-semibold">{{ analysis.original_filename }}</div>
             <div class="small text-muted mt-1">
@@ -94,8 +121,10 @@
 
 {% if analysis.status == 'processing' %}
 <div class="alert alert-info shadow-sm border-0 border-start border-4 border-info">
-    <h6 class="fw-bold"><i class="bi bi-arrow-clockwise me-1"></i> Analysis in Progress</h6>
-    <p class="mb-2">Your image is currently being analyzed. This page will automatically refresh when complete.</p>
+    <h6 class="fw-bold" id="processing-label">
+        <i class="bi bi-arrow-clockwise me-1" style="animation: spin 1s linear infinite;"></i> Analysis in Progress...
+    </h6>
+    <p class="mb-2">Your image is currently being analyzed. Checking status every 2.5 seconds...</p>
     <div class="progress" style="height: 10px;">
         <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" style="width: 100%"></div>
     </div>
@@ -118,15 +147,95 @@
 {% endif %}
 
 {% if analysis.status == 'completed' %}
+<!-- Confidence Scores Card -->
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header detail-card-header">
+        <i class="bi bi-speedometer2 me-2 text-warning"></i> Forensic Confidence Scores
+    </div>
+    <div class="card-body">
+        <div class="row g-4">
+            <!-- ELA Tampering Likelihood -->
+            <div class="col-md-4">
+                <div class="small text-muted fw-bold text-uppercase mb-2">ELA Tamper Signal</div>
+                {% if confidence.ela_tamper_confidence is not None %}
+                <div class="progress" style="height:24px;">
+                    <div class="progress-bar bg-{% if confidence.ela_tamper_confidence > 60 %}danger{% elif confidence.ela_tamper_confidence > 30 %}warning{% else %}success{% endif %}"
+                         style="width:{{ confidence.ela_tamper_confidence }}%">
+                        <span class="fw-bold">{{ confidence.ela_tamper_confidence }}%</span>
+                    </div>
+                </div>
+                <small class="text-muted mt-1 d-block">{{ confidence.ela_tamper_label }}</small>
+                {% else %}
+                <p class="text-muted small mb-0">N/A (not JPEG)</p>
+                {% endif %}
+            </div>
+
+            <!-- AI Generation Probability -->
+            <div class="col-md-4">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="small text-muted fw-bold text-uppercase">AI Generation Risk</span>
+                    <i class="bi bi-info-circle text-muted"
+                       data-bs-toggle="tooltip"
+                       title="Score indicates likelihood image is AI-generated based on compression analysis and metadata patterns. 0-20%=Likely authentic, 20-50%=Possible AI/editing, 50-80%=Strong AI indicators, 80-100%=Very likely AI-generated"
+                       style="cursor:help;"></i>
+                </div>
+                {% if confidence.ai_probability is not None %}
+                <div class="progress" style="height:24px;">
+                    <div class="progress-bar bg-{% if confidence.ai_probability > 70 %}danger{% elif confidence.ai_probability > 45 %}warning{% elif confidence.ai_probability > 20 %}info{% else %}success{% endif %}"
+                         style="width:{{ confidence.ai_probability }}%">
+                        <span class="fw-bold">{{ confidence.ai_probability }}%</span>
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block" style="font-size:0.8rem;">
+                    <strong>Analysis:</strong> {{ analysis.deepfake_notes|default:"Analyzing..." }}
+                </small>
+                {% if confidence.ai_probability > 60 %}
+                <div class="alert alert-danger alert-sm mt-2 py-2 px-3 mb-0" style="font-size:0.85rem;">
+                    <i class="bi bi-exclamation-triangle-fill"></i> High AI generation risk
+                </div>
+                {% elif confidence.ai_probability > 35 %}
+                <div class="alert alert-warning alert-sm mt-2 py-2 px-3 mb-0" style="font-size:0.85rem;">
+                    <i class="bi bi-exclamation-circle-fill"></i> Suspicious patterns detected
+                </div>
+                {% endif %}
+                {% else %}
+                <p class="text-muted small mb-0">N/A</p>
+                {% endif %}
+            </div>
+
+            <!-- Steganography Detection -->
+            <div class="col-md-4">
+                <div class="small text-muted fw-bold text-uppercase mb-2">Hidden Data Signal</div>
+                <div class="text-center">
+                    {% if confidence.stego_detected %}
+                    <span class="badge bg-danger fs-6 px-3 py-2">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> Detected
+                    </span>
+                    {% else %}
+                    <span class="badge bg-success fs-6 px-3 py-2">
+                        <i class="bi bi-shield-check me-1"></i> Clean
+                    </span>
+                    {% endif %}
+                </div>
+                {% if confidence.copy_move_match_count > 0 %}
+                <p class="text-muted small mt-2 mb-0">Copy-move: {{ confidence.copy_move_match_count }} matches</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Bootstrap Tabs -->
 <ul class="nav nav-tabs mb-4 px-2" id="analysisTabs" role="tablist">
     <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="tab-overview" data-bs-toggle="tab" data-bs-target="#pane-overview" type="button" role="tab">
+        <button class="nav-link active" id="tab-overview" data-bs-toggle="tab" data-bs-target="#pane-overview"
+            type="button" role="tab">
             <i class="bi bi-info-circle me-1"></i> Overview
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-exif" data-bs-toggle="tab" data-bs-target="#pane-exif" type="button" role="tab">
+        <button class="nav-link" id="tab-exif" data-bs-toggle="tab" data-bs-target="#pane-exif" type="button"
+            role="tab">
             <i class="bi bi-tags me-1"></i> EXIF Metadata
         </button>
     </li>
@@ -136,12 +245,14 @@
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-steg" data-bs-toggle="tab" data-bs-target="#pane-steg" type="button" role="tab">
+        <button class="nav-link" id="tab-steg" data-bs-toggle="tab" data-bs-target="#pane-steg" type="button"
+            role="tab">
             <i class="bi bi-shield-lock me-1"></i> Steganography
         </button>
     </li>
     <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-geolocation" data-bs-toggle="tab" data-bs-target="#pane-geolocation" type="button" role="tab">
+        <button class="nav-link" id="tab-geolocation" data-bs-toggle="tab" data-bs-target="#pane-geolocation"
+            type="button" role="tab">
             <i class="bi bi-geo-alt me-1"></i> Geolocation
         </button>
     </li>
@@ -203,14 +314,13 @@
                     </div>
                     <div class="card-body p-0">
                         {% if charts.rgb_histogram %}
-                            {{ charts.rgb_histogram|safe }}
+                        {{ charts.rgb_histogram|safe }}
                         {% else %}
-                            <div class="alert alert-info m-4" role="alert">
-                                <i class="bi bi-info-circle me-1"></i>
-                                <strong>RGB Histogram:</strong> Color distribution analysis coming soon!
-                                In Phase 2, we'll add detailed RGB channel histograms showing the distribution
-                                of red, green, and blue values across all pixels.
-                            </div>
+                        <div class="alert alert-warning m-4" role="alert">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            <strong>No color data available:</strong> Unable to extract color histogram data from this
+                            image. This may occur if the image format is not compatible or was corrupted during upload.
+                        </div>
                         {% endif %}
                     </div>
                 </div>
@@ -231,8 +341,9 @@
                         <i class="bi bi-pie-chart me-2 text-warning"></i>Dominant Colors
                     </div>
                     <div class="card-body">
-                        <div class="alert alert-info" role="alert">
-                            <small>Pie chart showing top 10 dominant colors coming in Phase 2</small>
+                        <div class="alert alert-warning" role="alert">
+                            <small><i class="bi bi-exclamation-triangle me-1"></i>No color distribution data available.
+                                Unable to process image colors.</small>
                         </div>
                     </div>
                 </div>
@@ -251,8 +362,9 @@
                         <i class="bi bi-bar-chart me-2 text-info"></i>Color Statistics
                     </div>
                     <div class="card-body">
-                        <div class="alert alert-info" role="alert">
-                            <small>Detailed RGB channel statistics coming in Phase 2</small>
+                        <div class="alert alert-warning" role="alert">
+                            <small><i class="bi bi-exclamation-triangle me-1"></i>No RGB statistics available. Unable to
+                                process image data.</small>
                         </div>
                     </div>
                 </div>
@@ -264,39 +376,68 @@
         <div class="row g-4">
             <div class="col-md-6">
                 <div class="card h-100 shadow-sm border-0">
-                    <div class="card-header detail-card-header"><i class="bi bi-info-circle text-primary me-2"></i> File Information</div>
+                    <div class="card-header detail-card-header"><i class="bi bi-info-circle text-primary me-2"></i> File
+                        Information</div>
                     <div class="card-body">
                         <table class="table table-sm table-borderless mb-0">
                             <tbody>
-                                <tr><td class="text-muted w-25">Filename</td><td class="fw-semibold">{{ analysis.original_filename }}</td></tr>
-                                <tr><td class="text-muted">File Size</td><td class="fw-semibold">{{ analysis.file_size_mb }} MB</td></tr>
-                                <tr><td class="text-muted">Format</td><td class="fw-semibold text-uppercase">{{ analysis.image_format }}</td></tr>
-                                <tr><td class="text-muted">Dimensions</td><td class="fw-semibold">{{ analysis.image_width }} x {{ analysis.image_height }} px</td></tr>
-                                <tr><td class="text-muted">SHA256 Hash</td><td><code class="text-body">{{ analysis.sha256_hash|truncatechars:32 }}...</code></td></tr>
+                                <tr>
+                                    <td class="text-muted w-25">Filename</td>
+                                    <td class="fw-semibold">{{ analysis.original_filename }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">File Size</td>
+                                    <td class="fw-semibold">{{ analysis.file_size_mb }} MB</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Format</td>
+                                    <td class="fw-semibold text-uppercase">{{ analysis.image_format }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Dimensions</td>
+                                    <td class="fw-semibold">{{ analysis.image_width }} x {{ analysis.image_height }} px
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">SHA256 Hash</td>
+                                    <td><code class="text-body">{{ analysis.sha256_hash|truncatechars:32 }}...</code>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-            
+
             <div class="col-md-6">
                 <div class="card h-100 shadow-sm border-0">
-                    <div class="card-header detail-card-header"><i class="bi bi-gear text-muted me-2"></i> System Information</div>
+                    <div class="card-header detail-card-header"><i class="bi bi-gear text-muted me-2"></i> System
+                        Information</div>
                     <div class="card-body">
                         <table class="table table-sm table-borderless mb-0">
                             <tbody>
-                                <tr><td class="text-muted w-25">Analysis Date</td><td class="fw-semibold">{{ analysis.created_at|date:"M d, Y H:i:s" }}</td></tr>
+                                <tr>
+                                    <td class="text-muted w-25">Analysis Date</td>
+                                    <td class="fw-semibold">{{ analysis.created_at|date:"M d, Y H:i:s" }}</td>
+                                </tr>
                                 {% if analysis.analysis_duration %}
-                                <tr><td class="text-muted">Processing Time</td><td class="fw-semibold">{{ analysis.analysis_duration|floatformat:2 }}s</td></tr>
+                                <tr>
+                                    <td class="text-muted">Processing Time</td>
+                                    <td class="fw-semibold">{{ analysis.analysis_duration|floatformat:2 }}s</td>
+                                </tr>
                                 {% endif %}
                                 {% if analysis.os_info %}
-                                <tr><td class="text-muted">System</td><td class="fw-semibold">{{ analysis.os_info }}</td></tr>
+                                <tr>
+                                    <td class="text-muted">System</td>
+                                    <td class="fw-semibold">{{ analysis.os_info }}</td>
+                                </tr>
                                 {% endif %}
                                 <tr>
                                     <td class="text-muted">Megapixels</td>
                                     <td class="fw-semibold">
                                         {% if analysis.image_width and analysis.image_height %}
-                                        {{ analysis.image_width|mul:analysis.image_height|mul:0.000001|floatformat:"1" }} MP
+                                        {{ analysis.image_width|mul:analysis.image_height|mul:0.000001|floatformat:"1"
+                                        }} MP
                                         {% else %}
                                         N/A
                                         {% endif %}
@@ -312,19 +453,43 @@
 
     <!-- Tab 2: EXIF Metadata -->
     <div class="tab-pane fade" id="pane-exif" role="tabpanel">
+        <!-- Interactive Forensic Flashcard for EXIF -->
+        <div class="alert alert-primary bg-opacity-10 border-0 border-start border-primary border-4 shadow-sm mb-4 d-flex align-items-start">
+            <i class="bi bi-lightbulb-fill fs-3 text-primary me-3 mt-1"></i>
+            <div>
+                <h6 class="fw-bold mb-1">Forensic Concept: EXIF Metadata</h6>
+                <p class="mb-0 text-muted" style="font-size: 0.9rem;">
+                    <strong>EXIF (Exchangeable Image File Format)</strong> is hidden text embedded in photos by the camera. It reveals the exact device, lens, shutter speed, and timestamp. If an image is manipulated and re-saved, the EXIF is often stripped or shows software like "Adobe Photoshop".
+                </p>
+            </div>
+        </div>
+        
         {% if analysis.metadata %}
         <div class="row g-4 mb-4">
             <!-- Device Information -->
             {% if analysis.metadata.Make or analysis.metadata.Model or analysis.metadata.Software %}
             <div class="col-md-6">
                 <div class="card h-100 shadow-sm border-0">
-                    <div class="card-header detail-card-header text-primary"><i class="bi bi-camera me-1"></i> Device Information</div>
+                    <div class="card-header detail-card-header text-primary"><i class="bi bi-camera me-1"></i> Device
+                        Information</div>
                     <div class="card-body">
                         <table class="table table-sm table-borderless mb-0">
-                            {% if analysis.metadata.Make %}<tr><td class="text-muted">Camera Make</td><td class="fw-semibold">{{ analysis.metadata.Make }}</td></tr>{% endif %}
-                            {% if analysis.metadata.Model %}<tr><td class="text-muted">Camera Model</td><td class="fw-semibold">{{ analysis.metadata.Model }}</td></tr>{% endif %}
-                            {% if analysis.metadata.Software %}<tr><td class="text-muted">Software</td><td class="fw-semibold">{{ analysis.metadata.Software }}</td></tr>{% endif %}
-                            {% if analysis.metadata.DateTime %}<tr><td class="text-muted">Date/Time</td><td class="fw-semibold">{{ analysis.metadata.DateTime }}</td></tr>{% endif %}
+                            {% if analysis.metadata.Make %}<tr>
+                                <td class="text-muted">Camera Make</td>
+                                <td class="fw-semibold">{{ analysis.metadata.Make }}</td>
+                            </tr>{% endif %}
+                            {% if analysis.metadata.Model %}<tr>
+                                <td class="text-muted">Camera Model</td>
+                                <td class="fw-semibold">{{ analysis.metadata.Model }}</td>
+                            </tr>{% endif %}
+                            {% if analysis.metadata.Software %}<tr>
+                                <td class="text-muted">Software</td>
+                                <td class="fw-semibold">{{ analysis.metadata.Software }}</td>
+                            </tr>{% endif %}
+                            {% if analysis.metadata.DateTime %}<tr>
+                                <td class="text-muted">Date/Time</td>
+                                <td class="fw-semibold">{{ analysis.metadata.DateTime }}</td>
+                            </tr>{% endif %}
                         </table>
                     </div>
                 </div>
@@ -335,11 +500,13 @@
             {% if analysis.metadata.GPSInfo %}
             <div class="col-md-6">
                 <div class="card h-100 shadow-sm border-0">
-                    <div class="card-header detail-card-header text-success"><i class="bi bi-geo-alt me-1"></i> Location Information</div>
+                    <div class="card-header detail-card-header text-success"><i class="bi bi-geo-alt me-1"></i> Location
+                        Information</div>
                     <div class="card-body d-flex align-items-center">
                         <div class="alert alert-success bg-opacity-10 border-success w-100 mb-0">
                             <i class="bi bi-exclamation-circle me-1"></i> <strong>GPS Data Found</strong><br>
-                            <small class="text-body">This asset contains embedded GPS coordinates revealing physical locale capture data.</small>
+                            <small class="text-body">This asset contains embedded GPS coordinates revealing physical
+                                locale capture data.</small>
                         </div>
                     </div>
                 </div>
@@ -350,13 +517,26 @@
             {% if analysis.metadata.FNumber or analysis.metadata.ExposureTime or analysis.metadata.ISOSpeedRatings %}
             <div class="col-md-6">
                 <div class="card h-100 shadow-sm border-0">
-                    <div class="card-header detail-card-header text-warning"><i class="bi bi-sliders me-1"></i> Camera Settings</div>
+                    <div class="card-header detail-card-header text-warning"><i class="bi bi-sliders me-1"></i> Camera
+                        Settings</div>
                     <div class="card-body">
                         <table class="table table-sm table-borderless mb-0">
-                            {% if analysis.metadata.FNumber %}<tr><td class="text-muted">F-Number</td><td class="fw-semibold">f/{{ analysis.metadata.FNumber }}</td></tr>{% endif %}
-                            {% if analysis.metadata.ExposureTime %}<tr><td class="text-muted">Exposure Time</td><td class="fw-semibold">{{ analysis.metadata.ExposureTime }}s</td></tr>{% endif %}
-                            {% if analysis.metadata.ISOSpeedRatings %}<tr><td class="text-muted">ISO Speed</td><td class="fw-semibold">{{ analysis.metadata.ISOSpeedRatings }}</td></tr>{% endif %}
-                            {% if analysis.metadata.FocalLength %}<tr><td class="text-muted">Focal Length</td><td class="fw-semibold">{{ analysis.metadata.FocalLength }}mm</td></tr>{% endif %}
+                            {% if analysis.metadata.FNumber %}<tr>
+                                <td class="text-muted">F-Number</td>
+                                <td class="fw-semibold">f/{{ analysis.metadata.FNumber }}</td>
+                            </tr>{% endif %}
+                            {% if analysis.metadata.ExposureTime %}<tr>
+                                <td class="text-muted">Exposure Time</td>
+                                <td class="fw-semibold">{{ analysis.metadata.ExposureTime }}s</td>
+                            </tr>{% endif %}
+                            {% if analysis.metadata.ISOSpeedRatings %}<tr>
+                                <td class="text-muted">ISO Speed</td>
+                                <td class="fw-semibold">{{ analysis.metadata.ISOSpeedRatings }}</td>
+                            </tr>{% endif %}
+                            {% if analysis.metadata.FocalLength %}<tr>
+                                <td class="text-muted">Focal Length</td>
+                                <td class="fw-semibold">{{ analysis.metadata.FocalLength }}mm</td>
+                            </tr>{% endif %}
                         </table>
                     </div>
                 </div>
@@ -369,9 +549,18 @@
                     <div class="card-header detail-card-header"><i class="bi bi-bar-chart me-1"></i> Image Quality</div>
                     <div class="card-body">
                         <table class="table table-sm table-borderless mb-0">
-                            <tr><td class="text-muted">Dimensions</td><td class="fw-semibold">{{ analysis.image_width }} × {{ analysis.image_height }}</td></tr>
-                            <tr><td class="text-muted">File Size</td><td class="fw-semibold">{{ analysis.file_size_mb }} MB</td></tr>
-                            <tr><td class="text-muted">Format</td><td class="fw-semibold text-uppercase">{{ analysis.image_format }}</td></tr>
+                            <tr>
+                                <td class="text-muted">Dimensions</td>
+                                <td class="fw-semibold">{{ analysis.image_width }} × {{ analysis.image_height }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">File Size</td>
+                                <td class="fw-semibold">{{ analysis.file_size_mb }} MB</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Format</td>
+                                <td class="fw-semibold text-uppercase">{{ analysis.image_format }}</td>
+                            </tr>
                         </table>
                     </div>
                 </div>
@@ -396,21 +585,63 @@
         <div class="card border-0 shadow-sm p-5 text-center">
             <div class="stat-icon blue mx-auto mb-3"><i class="bi bi-tags"></i></div>
             <h5 class="fw-bold">No Metadata Found</h5>
-            <p class="text-muted mb-0">The image has no EXIF metadata attached. It may have been stripped during processing.</p>
+            <p class="text-muted mb-0">The image has no EXIF metadata attached. It may have been stripped during
+                processing.</p>
         </div>
         {% endif %}
     </div>
 
     <!-- Tab 3: ELA Analysis -->
     <div class="tab-pane fade" id="pane-ela" role="tabpanel">
+        <!-- Interactive Forensic Flashcard for ELA -->
+        <div class="alert alert-info bg-opacity-10 border-0 border-start border-info border-4 shadow-sm mb-4 d-flex align-items-start">
+            <i class="bi bi-lightbulb-fill fs-3 text-info me-3 mt-1"></i>
+            <div>
+                <h6 class="fw-bold mb-1">Forensic Concept: Error Level Analysis (ELA)</h6>
+                <p class="mb-0 text-muted" style="font-size: 0.9rem;">
+                    <strong>ELA</strong> intentionally re-saves the image at a known error rate to highlight compression differences. If someone splices a Fake object into a picture, the spliced object will have a different compression signature and "glow" brighter on the ELA map compared to the original background!
+                </p>
+            </div>
+        </div>
+        
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
                 {% if analysis.ela_analysis_performed %}
                 <div class="alert alert-info border-info border-start border-4 bg-opacity-10 mb-4">
                     <i class="bi bi-info-circle me-1"></i>
                     <strong>ELA Analysis Completed</strong><br>
-                    Error Level Analysis was performed to detect potential image manipulations. This technique reveals areas of different compression levels within JPEG images.
+                    Error Level Analysis was performed to detect potential image manipulations. This technique reveals
+                    areas of different compression levels within JPEG images.
                 </div>
+
+                <!-- ELA Heatmap Display -->
+                {% if ela_heatmap_b64 %}
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-2">
+                        <i class="bi bi-eye me-1 text-danger"></i> ELA Heatmap — Tampering Hotspots
+                    </h6>
+                    <p class="text-muted small mb-3">
+                        Bright red areas indicate higher compression-level differences — potential signs of manipulation or splicing.
+                    </p>
+                    <div class="position-relative d-flex justify-content-center" style="background:#111; border-radius:8px; overflow:hidden; border:1px solid rgba(239,68,68,0.3);">
+                        <img src="data:image/png;base64,{{ ela_heatmap_b64 }}"
+                             class="img-fluid"
+                             style="opacity:0.9; mix-blend-mode:screen; max-width:600px; max-height:400px; object-fit:contain;"
+                             alt="ELA Heatmap">
+                        <div class="position-absolute bottom-0 end-0 m-2">
+                            <span class="badge bg-dark bg-opacity-75 text-danger small">
+                                <i class="bi bi-thermometer-half me-1"></i>Heatmap Overlay
+                            </span>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted mt-2">
+                        <span>Low difference</span>
+                        <div style="flex:1; height:6px; margin:0 12px; border-radius:3px;
+                                    background:linear-gradient(to right, transparent, rgba(239,68,68,0.3), #ef4444); align-self:center;"></div>
+                        <span>High difference</span>
+                    </div>
+                </div>
+                {% endif %}
 
                 {% if charts.ela_chart %}
                 <div class="card border-0 bg-transparent mb-4">
@@ -422,7 +653,8 @@
 
                 {% if analysis.ela_results %}
                 <h6 class="fw-bold mb-3">Analysis Matrix Results:</h6>
-                <pre class="bg-dark text-white p-3 rounded" style="font-size: 0.85rem;">{{ analysis.ela_results|pprint }}</pre>
+                <pre class="bg-dark text-white p-3 rounded"
+                    style="font-size: 0.85rem;">{{ analysis.ela_results|pprint }}</pre>
                 {% endif %}
                 {% else %}
                 <div class="text-center py-5">
@@ -437,6 +669,17 @@
 
     <!-- Tab 4: Steganography -->
     <div class="tab-pane fade" id="pane-steg" role="tabpanel">
+        <!-- Interactive Forensic Flashcard for Steganography -->
+        <div class="alert alert-warning bg-opacity-10 border-0 border-start border-warning border-4 shadow-sm mb-4 d-flex align-items-start">
+            <i class="bi bi-lightbulb-fill fs-3 text-warning me-3 mt-1"></i>
+            <div>
+                <h6 class="fw-bold mb-1">Forensic Concept: Steganography</h6>
+                <p class="mb-0 text-muted" style="font-size: 0.9rem;">
+                    <strong>Steganography</strong> is the covert practice of hiding secret text payloads inside the mathematical grid of an image. Cybercriminals use this to bypass firewalls by disguising malware logic or secret messages inside completely normal-looking pictures!
+                </p>
+            </div>
+        </div>
+        
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
                 {% if charts.steganography_chart %}
@@ -449,8 +692,8 @@
 
                 {% if analysis.steganography_result %}
                 <div class="alert alert-warning border-warning border-start border-4 bg-opacity-10 mb-4">
-                    <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
-                    <strong>Steganography Detected:</strong> <span class="text-body fw-medium">{{ analysis.steganography_result }}</span>
+                    <i class="bi bi-info-circle-fill text-warning me-1"></i>
+                    <strong>Steganography Analysis:</strong> <span class="text-body fw-medium">{{ analysis.steganography_result }}</span>
                 </div>
                 {% if analysis.steganography_message %}
                 <h6 class="fw-bold mb-3">Hidden Exfiltration Node Data:</h6>
@@ -460,7 +703,8 @@
                 {% endif %}
                 {% else %}
                 <div class="text-center py-5">
-                    <div class="stat-icon green mx-auto mb-3 border border-success border-opacity-25" style="box-shadow: 0 0 20px rgba(16,185,129,0.3);"><i class="bi bi-shield-check"></i></div>
+                    <div class="stat-icon green mx-auto mb-3 border border-success border-opacity-25"
+                        style="box-shadow: 0 0 20px rgba(16,185,129,0.3);"><i class="bi bi-shield-check"></i></div>
                     <h5 class="fw-bold text-success">Clean Assessment</h5>
                     <p class="text-muted mb-0">No hidden data or LSB anomalies detected in the image structure.</p>
                 </div>
@@ -474,30 +718,31 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
                 {% if charts.geolocation_map %}
-                    <!-- Location Info Card -->
-                    {% if charts.location_info_card %}
-                    <div class="mb-4">
-                        {{ charts.location_info_card|safe }}
-                    </div>
-                    {% endif %}
+                <!-- Location Info Card -->
+                {% if charts.location_info_card %}
+                <div class="mb-4">
+                    {{ charts.location_info_card|safe }}
+                </div>
+                {% endif %}
 
-                    <!-- Geolocation Map -->
-                    <div class="mb-4">
-                        <h6 class="fw-bold mb-3">
-                            <i class="bi bi-map me-2"></i> GPS Location Map
-                        </h6>
-                        <div class="card border-0 bg-transparent">
-                            <div class="card-body p-0">
-                                {{ charts.geolocation_map|safe }}
-                            </div>
+                <!-- Geolocation Map -->
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-3">
+                        <i class="bi bi-map me-2"></i> GPS Location Map
+                    </h6>
+                    <div class="card border-0 bg-transparent">
+                        <div class="card-body p-0">
+                            {{ charts.geolocation_map|safe }}
                         </div>
                     </div>
+                </div>
                 {% else %}
-                    <div class="text-center py-5">
-                        <div class="stat-icon blue mx-auto mb-3"><i class="bi bi-geo-alt"></i></div>
-                        <h5 class="fw-bold">No GPS Data Found</h5>
-                        <p class="text-muted mb-0">This image does not contain GPS coordinates in its EXIF metadata. Geolocation data is not available.</p>
-                    </div>
+                <div class="text-center py-5">
+                    <div class="stat-icon blue mx-auto mb-3"><i class="bi bi-geo-alt"></i></div>
+                    <h5 class="fw-bold">No GPS Data Found</h5>
+                    <p class="text-muted mb-0">This image does not contain GPS coordinates in its EXIF metadata.
+                        Geolocation data is not available.</p>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -507,12 +752,29 @@
 {% endblock %}
 
 {% block extra_js %}
-{% if analysis.status == 'processing' %}
+{% if analysis.status == 'processing' or analysis.status == 'pending' %}
 <script>
-// Auto-refresh for processing status
-setTimeout(function() {
-    location.reload();
-}, 5000);
+    (function() {
+        const statusUrl = "{% url 'analysis:analysis_status' analysis.pk %}";
+        const progressLabel = document.getElementById('processing-label');
+
+        const poll = setInterval(async function() {
+            try {
+                const r = await fetch(statusUrl);
+                const data = await r.json();
+                if (progressLabel) {
+                    progressLabel.innerHTML = '<i class="bi bi-arrow-clockwise me-1" style="animation: spin 1s linear infinite;"></i> ' + data.progress_label;
+                }
+                if (data.status === 'completed' || data.status === 'failed') {
+                    clearInterval(poll);
+                    location.reload();
+                }
+            } catch(e) {
+                // Network error - keep polling
+                console.error('Status poll error:', e);
+            }
+        }, 2500);
+    })();
 </script>
 {% endif %}
 {% endblock %}

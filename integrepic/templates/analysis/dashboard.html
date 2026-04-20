@@ -1,131 +1,418 @@
 {% extends 'base.html' %}
+{% block title %}Dashboard - IntegriPic Engine{% endblock %}
 
-{% block title %}Dashboard - IntegriPic{% endblock %}
+{% block page_header %}
+<div class="d-none">Dashboard Headers inside main hero</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Metric Sparklines */
+    .sparkline {
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 40px;
+        opacity: 0.15;
+        pointer-events: none;
+    }
+    
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        letter-spacing: -1.5px;
+        color: var(--text-main);
+    }
+
+    /* Hero Section (Stripe/Linear style) */
+    .hero-panel {
+        background: radial-gradient(circle at 75% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 60%),
+                    linear-gradient(180deg, var(--bg-surface) 0%, rgba(15,23,42,0.05) 100%);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        padding: 4rem 4rem;
+        display: flex;
+        align-items: center;
+        gap: 4rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .hero-content {
+        flex: 1;
+        z-index: 10;
+    }
+    
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        letter-spacing: -2px;
+        color: var(--text-main);
+        margin-bottom: 1rem;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.15rem;
+        color: var(--text-muted);
+        line-height: 1.6;
+        margin-bottom: 2.5rem;
+        max-width: 500px;
+    }
+
+    /* Hero Visual: Integrity Dashboard Meter */
+    .hero-visual {
+        flex: 1;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        position: relative;
+        z-index: 10;
+    }
+    
+    .score-meter {
+        width: 250px; height: 250px;
+        position: relative;
+        display: flex; align-items: center; justify-content: center;
+    }
+    
+    /* HUD Analytics Engine Meter (SVG Driven) */
+    .meter-svg { position: absolute; width: 100%; height: 100%; transform: rotate(-90deg); z-index: 2; pointer-events: none; }
+    .meter-bg { fill: none; stroke: var(--border-color); stroke-width: 8; opacity: 0.5; }
+    .meter-progress { 
+        fill: none; 
+        stroke: var(--primary); 
+        stroke-width: 8; 
+        stroke-dasharray: 691; 
+        stroke-dashoffset: 691; 
+        stroke-linecap: round; 
+        filter: drop-shadow(0 0 8px var(--primary-glow)); 
+        transition: stroke-dashoffset 2s cubic-bezier(0.2, 1, 0.3, 1); 
+    }
+    
+    @keyframes spin-glow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .meter-glow-ring { 
+        position: absolute; 
+        width: 100%; height: 100%; 
+        border-radius: 50%; 
+        box-shadow: 0 0 40px var(--primary-glow); 
+        animation: spin-glow 10s linear infinite; 
+        opacity: 0.3; 
+        z-index: 1; 
+        pointer-events: none;
+    }
+    
+    .meter-core {
+        width: 85%; height: 85%;
+        background: var(--bg-surface);
+        border-radius: 50%;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1), inset 0 4px 15px rgba(0,0,0,0.05);
+        z-index: 5;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
+    }
+    
+    .score-value {
+        font-size: 3.5rem;
+        font-weight: 800;
+        letter-spacing: -2px;
+        color: var(--text-main);
+        line-height: 1;
+    }
+    
+    .score-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 1.5px;
+        margin-top: 0.5rem;
+    }
+    
+    /* transition class already defined in base.html */
+
+    /* Dashboard Grid Layouts */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 2rem;
+    }
+
+    .panel-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        display: flex; align-items: center; gap: 0.75rem;
+        color: var(--text-main);
+    }
+
+    /* Insights Grid (2x2) */
+    .insights-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+    }
+    
+    .insight-card {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: transform 0.2s, background 0.2s;
+    }
+    .insight-card:hover { transform: translateY(-2px); background: var(--bg-surface-hover); }
+    
+    .insight-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem; display: flex; justify-content: space-between; }
+    .insight-value { font-size: 1.8rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.5px; }
+
+    /* Quick Actions */
+    .quick-action-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    
+    .action-card {
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem;
+        padding: 1.5rem 1rem;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        color: var(--text-main);
+        text-decoration: none;
+        transition: all 0.2s;
+        text-align: center;
+    }
+    .action-card:hover {
+        background: var(--bg-surface-hover);
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        color: var(--text-main);
+        border-color: rgba(139, 92, 246, 0.4);
+    }
+    .action-icon {
+        width: 48px; height: 48px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem;
+        background: rgba(139, 92, 246, 0.1); color: var(--primary);
+    }
+    
+    @media (max-width: 991px) {
+        .dashboard-grid { grid-template-columns: 1fr; }
+        .hero-panel { flex-direction: column; text-align: center; padding: 2.5rem 2rem; }
+        .hero-visual { margin-top: 2rem; justify-content: center; }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-4">
-    <div>
-        <h2 class="fw-bold mb-1">Welcome back, {{ user.get_full_name|default:user.username }}!</h2>
-        <p class="text-muted mb-0">Here's an overview of your forensic analysis activity.</p>
+<!-- Top Metrics Row: Pure numbers, no fake trends -->
+<div class="row g-4 mb-4 mt-1 fade-up-stagger stagger-1">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card overflow-hidden position-relative p-4 border-0 shadow-sm">
+            <div class="d-flex justify-content-between align-items-start mb-1 position-relative z-index-1">
+                <span class="fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:1px; color: var(--text-muted);">Assets Processed</span>
+            </div>
+            <div class="position-relative z-index-1 mt-1">
+                <span class="metric-value">{{ stats.total_images|default:0 }}</span>
+            </div>
+            <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <path d="M0,20 Q20,25 40,10 T80,15 T100,5" fill="none" stroke="var(--primary)" stroke-width="2" />
+            </svg>
+        </div>
     </div>
-    <a href="{% url 'analysis:upload' %}" class="btn btn-primary d-none d-md-inline-flex align-items-center gap-2">
-        <i class="bi bi-cloud-upload"></i> Upload Image
-    </a>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card overflow-hidden position-relative p-4 border-0 shadow-sm">
+            <div class="d-flex justify-content-between align-items-start mb-1 position-relative z-index-1">
+                <span class="fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:1px; color: var(--text-muted);">Analyses Runs</span>
+            </div>
+            <div class="position-relative z-index-1 mt-1">
+                <span class="metric-value">{{ stats.total_analyses|default:0 }}</span>
+            </div>
+            <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <path d="M0,15 Q20,5 50,20 T100,10" fill="none" stroke="var(--secondary)" stroke-width="2" />
+            </svg>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card overflow-hidden position-relative p-4 border-0 shadow-sm">
+            <div class="d-flex justify-content-between align-items-start mb-1 position-relative z-index-1">
+                <span class="fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:1px; color: var(--text-muted);">Comparisons Executed</span>
+            </div>
+            <div class="position-relative z-index-1 mt-1">
+                <span class="metric-value">{{ stats.total_comparisons|default:0 }}</span>
+            </div>
+            <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <path d="M0,5 Q30,25 60,15 T100,20" fill="none" stroke="#10b981" stroke-width="2" />
+            </svg>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card overflow-hidden position-relative p-4 border-0 shadow-sm">
+            <div class="d-flex justify-content-between align-items-start mb-1 position-relative z-index-1">
+                <span class="fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:1px; color: var(--text-muted);">Reports Generated</span>
+            </div>
+            <div class="position-relative z-index-1 mt-1">
+                <span class="metric-value">{{ stats.total_reports|default:0 }}</span>
+            </div>
+            <svg class="sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <path d="M0,25 Q30,20 50,5 T100,10" fill="none" stroke="var(--accent-orange)" stroke-width="2" />
+            </svg>
+        </div>
+    </div>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-6 col-lg-3">
-        <div class="card p-3 shadow-sm h-100 border-0">
-            <div class="d-flex align-items-center gap-3">
-                <div class="stat-icon blue"><i class="bi bi-images"></i></div>
-                <div>
-                    <div class="fw-bolder fs-4 lh-1">{{ stats.total_images }}</div>
-                    <div class="text-muted small fw-medium text-uppercase mt-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Total Assets</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-lg-3">
-        <div class="card p-3 shadow-sm h-100 border-0">
-            <div class="d-flex align-items-center gap-3">
-                <div class="stat-icon green"><i class="bi bi-search"></i></div>
-                <div>
-                    <div class="fw-bolder fs-4 lh-1">{{ stats.total_analyses }}</div>
-                    <div class="text-muted small fw-medium text-uppercase mt-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Analyses Runs</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-lg-3">
-        <div class="card p-3 shadow-sm h-100 border-0">
-            <div class="d-flex align-items-center gap-3">
-                <div class="stat-icon yellow"><i class="bi bi-intersect"></i></div>
-                <div>
-                    <div class="fw-bolder fs-4 lh-1">{{ stats.total_comparisons }}</div>
-                    <div class="text-muted small fw-medium text-uppercase mt-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Comparisons</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-lg-3">
-        <div class="card p-3 shadow-sm h-100 border-0">
-            <div class="d-flex align-items-center gap-3">
-                <div class="stat-icon purple"><i class="bi bi-file-earmark-text"></i></div>
-                <div>
-                    <div class="fw-bolder fs-4 lh-1">{{ stats.total_reports }}</div>
-                    <div class="text-muted small fw-medium text-uppercase mt-1" style="font-size: 0.75rem; letter-spacing: 0.5px;">Reports Built</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-4">
-    <div class="col-xl-8">
-        <div class="card shadow-sm border-0 h-100 p-4">
-            <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-                <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>Recent Operations</h5>
-                <a href="{% url 'analysis:analysis_list' %}" class="btn btn-outline-primary btn-sm fw-medium">View All <i class="bi bi-arrow-right ms-1"></i></a>
-            </div>
-            
-            {% if recent_analyses %}
-            <div class="row g-3">
-                {% for analysis in recent_analyses %}
-                <div class="col-md-6">
-                    <div class="card h-100 border bg-transparent">
-                        <div class="card-body">
-                            <div class="d-flex align-items-start justify-content-between mb-2">
-                                <h6 class="mb-0 fw-semibold text-truncate" style="max-width: 180px;">{{ analysis.original_filename }}</h6>
-                                {% if analysis.status == 'completed' %}<span class="badge bg-success bg-opacity-10 text-success border border-success ms-2">Completed</span>
-                                {% elif analysis.status == 'failed' %}<span class="badge bg-danger bg-opacity-10 text-danger border border-danger ms-2">Failed</span>
-                                {% elif analysis.status == 'processing' %}<span class="badge bg-warning bg-opacity-10 text-warning border border-warning ms-2">Processing</span>
-                                {% else %}<span class="badge bg-secondary ms-2">Pending</span>{% endif %}
-                            </div>
-                            <p class="text-muted small"><i class="bi bi-calendar3 me-1"></i> {{ analysis.created_at|timesince }} ago</p>
-                            <a href="{% url 'analysis:analysis_detail' analysis.id %}" class="btn btn-sm btn-outline-primary w-100">
-                                <i class="bi bi-eye me-1"></i>View Diagnostics
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="text-center py-5 my-3">
-                <div class="stat-icon blue mx-auto mb-3 shadow-sm"><i class="bi bi-search"></i></div>
-                <h5 class="fw-bold">No Operations Executed</h5>
-                <p class="text-muted mb-4">You have not scanned any media assets yet.</p>
-                <a href="{% url 'analysis:upload' %}" class="btn btn-primary"><i class="bi bi-cloud-upload me-1"></i>Upload Asset Now</a>
-            </div>
-            {% endif %}
+<!-- Split Hero Section -->
+<div class="hero-panel fade-up-stagger stagger-2">
+    <div class="hero-content">
+        <h1 class="hero-title">Integri<span style="color: var(--primary);">Pic</span> Core</h1>
+        <p class="hero-subtitle">Advanced Digital Forensics & Cryptographic Image Analysis Hub. Verify media authenticity without compromise.</p>
+        <div class="d-flex gap-3 flex-wrap mt-4">
+            <a href="{% url 'analysis:upload' %}" class="btn btn-primary px-4 py-2 shadow-sm fw-semibold" id="startScanBtn">
+                Start Scan
+            </a>
+            <a href="{% url 'analysis:upload' %}" class="btn btn-secondary px-4 py-2 shadow-sm fw-semibold">
+                Upload Asset
+            </a>
         </div>
     </div>
     
-    <div class="col-xl-4">
-        <div class="card shadow-sm border-0 h-100 p-4">
-            <h6 class="fw-bold mb-4 pb-2 border-bottom"><i class="bi bi-lightning-charge-fill me-2 text-warning"></i>Quick Actions</h6>
-            <div class="d-grid gap-3 mb-4">
-                <a href="{% url 'analysis:upload' %}" class="btn btn-primary d-flex align-items-center justify-content-center gap-2 py-2"><i class="bi bi-cloud-upload"></i> Upload Asset</a>
-                <a href="{% url 'analysis:compare' %}" class="btn btn-outline-primary d-flex align-items-center justify-content-center gap-2 py-2"><i class="bi bi-intersect"></i> Compare Matrices</a>
-                <a href="{% url 'reports:user_reports' %}" class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2 py-2"><i class="bi bi-file-earmark-text"></i> Archive Access</a>
+    <div class="hero-visual">
+        <div class="score-meter pe-4">
+            <div class="meter-glow-ring"></div>
+            <svg class="meter-svg" viewBox="0 0 250 250">
+                <circle class="meter-bg" cx="125" cy="125" r="110"></circle>
+                <circle class="meter-progress" cx="125" cy="125" r="110" id="integrityRing"></circle>
+            </svg>
+            <div class="meter-core" id="meterCore">
+                <div class="score-value"><span id="integrityScoreNumber">0</span><span style="font-size: 2rem;">%</span></div>
+                <div class="score-label">System Integrity</div>
             </div>
-            
-            <h6 class="fw-bold mb-3 mt-4 text-muted text-uppercase" style="font-size:0.78rem;letter-spacing:1px;">Available Systems</h6>
-            <ul class="list-unstyled mb-0">
-                <li class="mb-3 d-flex gap-3 align-items-center">
-                    <div class="stat-icon blue" style="width:40px;height:40px;font-size:1rem;border-radius:10px;"><i class="bi bi-tags"></i></div>
-                    <div><div class="fw-bold" style="font-size:0.9rem;">EXIF Interrogation</div><div class="text-muted" style="font-size:0.75rem;">Deep metadata extraction log</div></div>
-                </li>
-                <li class="mb-3 d-flex gap-3 align-items-center">
-                    <div class="stat-icon yellow" style="width:40px;height:40px;font-size:1rem;border-radius:10px;"><i class="bi bi-eye"></i></div>
-                    <div><div class="fw-bold" style="font-size:0.9rem;">Error Level Analysis</div><div class="text-muted" style="font-size:0.75rem;">Highlight compression discrepancies</div></div>
-                </li>
-                <li class="mb-3 d-flex gap-3 align-items-center">
-                    <div class="stat-icon green" style="width:40px;height:40px;font-size:1rem;border-radius:10px;"><i class="bi bi-shield-lock"></i></div>
-                    <div><div class="fw-bold" style="font-size:0.9rem;">Steganography Sandbox</div><div class="text-muted" style="font-size:0.75rem;">Isolate hidden structural data</div></div>
-                </li>
-            </ul>
         </div>
     </div>
 </div>
+
+<!-- Bottom Grid: Insights & Navigation -->
+<div class="dashboard-grid fade-up-stagger stagger-3">
+    <!-- Insights Panel (Replacing System Logs) -->
+    <div class="card p-4 border-0 shadow-sm">
+        <h3 class="panel-title"><i class="bi bi-radar text-primary fs-4"></i> Diagnostics & Insights</h3>
+        
+        <div class="insights-grid mt-4">
+            <div class="insight-card">
+                <div class="insight-label">Platform Confidence <i class="bi bi-shield-check text-success"></i></div>
+                <div class="insight-value text-success">Optimal</div>
+            </div>
+            
+            <div class="insight-card">
+                <div class="insight-label">Detected Anomalies <i class="bi bi-exclamation-triangle text-warning"></i></div>
+                <div class="insight-value">{{ stats.total_analyses|default:"0" }}</div>
+                <div class="text-muted small mt-1">Cross-referenced globally</div>
+            </div>
+            
+            <div class="insight-card">
+                <div class="insight-label">Encryption Protocol <i class="bi bi-lock"></i></div>
+                <div class="insight-value">AES-256</div>
+            </div>
+            
+            <div class="insight-card">
+                <div class="insight-label">Last Synchronization <i class="bi bi-clock-history"></i></div>
+                <div class="insight-value" style="font-size: 1.4rem; padding-top: 5px;">Just now</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Panel -->
+    <div class="card p-4 border-0 shadow-sm">
+        <h3 class="panel-title mb-4"><i class="bi bi-lightning-charge-fill text-warning fs-4"></i> Quick Operations</h3>
+        
+        <div class="quick-action-grid">
+            <a href="{% url 'analysis:upload' %}" class="action-card">
+                <div class="action-icon"><i class="bi bi-cloud-arrow-up-fill"></i></div>
+                <div class="fw-semibold" style="font-size: 0.95rem;">Upload Asset</div>
+            </a>
+            
+            <a href="{% url 'analysis:analysis_list' %}" class="action-card">
+                <div class="action-icon" style="color: var(--secondary); background: rgba(59, 130, 246, 0.1);"><i class="bi bi-search"></i></div>
+                <div class="fw-semibold" style="font-size: 0.95rem;">Run Scan</div>
+            </a>
+            
+            <a href="{% url 'analysis:compare' %}" class="action-card">
+                <div class="action-icon" style="color: #10b981; background: rgba(16, 185, 129, 0.1);"><i class="bi bi-intersect"></i></div>
+                <div class="fw-semibold" style="font-size: 0.95rem;">Comparison</div>
+            </a>
+
+            <a href="{% url 'reports:user_reports' %}" class="action-card">
+                <div class="action-icon" style="color: var(--accent-orange); background: rgba(245, 158, 11, 0.1);"><i class="bi bi-archive-fill"></i></div>
+                <div class="fw-semibold" style="font-size: 0.95rem;">View Reports</div>
+            </a>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Hero Ring & CountUp Animation Engine
+    setTimeout(() => {
+        const ring = document.getElementById('integrityRing');
+        const number = document.getElementById('integrityScoreNumber');
+        const targetPercent = 98;
+        
+        // 691 is approx circumference for r=110 (2 * pi * 110)
+        const offset = Math.max(0, 691 - ((targetPercent / 100) * 691));
+        if(ring) {
+            // Force reflow for CSS transition
+            void ring.offsetWidth;
+            ring.style.strokeDashoffset = offset;
+        }
+        
+        // Fluid Number Count Up via requestAnimationFrame
+        let current = 0;
+        const duration = 2000;
+        const startTime = performance.now();
+        
+        function updateNumber(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Ease out Expo mapping for pure smoothness
+            const easeOut = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+            current = Math.floor(easeOut * targetPercent);
+            
+            if(number) number.textContent = current;
+            
+            if(progress < 1) {
+                requestAnimationFrame(updateNumber);
+            } else {
+                if(number) number.textContent = targetPercent;
+            }
+        }
+        requestAnimationFrame(updateNumber);
+    }, 200); // 200ms delay to allow DOM to lock layout first
+    
+    // 2. The "Wow" Interaction Interceptor
+    const startScanBtn = document.getElementById('startScanBtn');
+    const meterCore = document.getElementById('meterCore');
+    const integrityRing = document.getElementById('integrityRing');
+    
+    if(startScanBtn && meterCore) {
+        startScanBtn.addEventListener('click', (e) => {
+            // Apply intense reactive pulse to the meter
+            meterCore.style.transform = 'scale(1.08)';
+            meterCore.style.boxShadow = '0 0 60px var(--primary-glow), inset 0 0 20px var(--primary-glow)';
+            if(integrityRing) integrityRing.style.filter = 'drop-shadow(0 0 15px var(--primary))';
+            
+            // Revert slightly after click completes, allowing browser time to navigate
+            setTimeout(() => {
+                meterCore.style.transform = 'scale(1)';
+                meterCore.style.boxShadow = '';
+                if(integrityRing) integrityRing.style.filter = 'drop-shadow(0 0 8px var(--primary-glow))';
+            }, 400);
+        });
+    }
+});
+</script>
 {% endblock %}

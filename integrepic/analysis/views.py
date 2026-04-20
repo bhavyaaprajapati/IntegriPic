@@ -15,6 +15,7 @@ import logging
 
 from .models import ImageAnalysis, ImageComparison
 from .services import ImageAnalysisService, ImageComparisonService
+from .image_analysis_service import AuditService
 from .forms import ImageUploadForm, ImageComparisonForm
 from .visualization_service import VisualizationService
 
@@ -99,22 +100,53 @@ def _analyze_single_file(request, uploaded_file):
            metadata = ImageAnalysisService.extract_metadata(temp_file_path)
            analysis.metadata = metadata
 
+           # Detect metadata timeline inconsistencies
+           timeline_flags = ImageAnalysisService.detect_timeline_inconsistencies(metadata)
+           analysis.timeline_flags = timeline_flags
+
+           # Extract RGB histogram data and color statistics
+           rgb_data = ImageAnalysisService.extract_rgb_data(temp_file_path)
+           analysis.rgb_histogram_data = rgb_data
+
+           # Compute perceptual hashes for near-duplicate detection
+           hashes = ImageAnalysisService.compute_perceptual_hashes(temp_file_path)
+           analysis.phash = hashes.get('phash')
+           analysis.dhash = hashes.get('dhash')
+           analysis.ahash = hashes.get('ahash')
 
            if image_format.upper() in ['JPEG', 'JPG']:
                ela_result = ImageAnalysisService.perform_ela_analysis(temp_file_path)
                analysis.ela_analysis_performed = True
-               analysis.ela_results = ela_result
+               if ela_result:
+                   # Extract heatmap separately to avoid storing large base64 in JSONField
+                   heatmap_b64 = ela_result.pop('heatmap_b64', None)
+                   analysis.ela_results = ela_result
+                   analysis.ela_heatmap_b64 = heatmap_b64
 
 
            stego_result = ImageAnalysisService.detect_steganography(temp_file_path)
            analysis.steganography_result = stego_result['result']
            analysis.steganography_message = stego_result['message']
 
+           # Detect copy-move forgery
+           copy_move_result = ImageAnalysisService.detect_copy_move(temp_file_path)
+           analysis.copy_move_result = copy_move_result
+
+           # Compute AI generation probability using forensic heuristics
+           ai_prob, ai_notes = ImageAnalysisService.compute_ai_probability(
+               analysis.ela_results,
+               analysis.copy_move_result,
+               analysis.metadata
+           )
+           analysis.deepfake_probability = ai_prob
+           analysis.deepfake_notes = ai_notes
 
            analysis.analysis_duration = time.time() - start_time
            analysis.status = 'completed'
            analysis.save()
 
+           # Log upload action
+           AuditService.log(request, 'upload', analysis=analysis)
 
        except Exception as e:
            logger.error(f"Error during analysis of {uploaded_file.name}: {e}")
@@ -215,12 +247,25 @@ def batch_results(request):
    return render(request, 'analysis/batch_results.html', context)
 
 
+def _ela_confidence_label(ela_pct):
+    """Convert ELA significant_pixels_percentage to a label"""
+    if ela_pct is None:
+        return "N/A"
+    elif ela_pct < 1.0:
+        return "Low"
+    elif ela_pct < 5.0:
+        return "Moderate"
+    else:
+        return "High"
 
 
 @login_required
 def analysis_detail(request, pk):
    """Display analysis results with interactive visualizations"""
    analysis = get_object_or_404(ImageAnalysis, pk=pk, user=request.user)
+
+   # Log view action
+   AuditService.log(request, 'view_analysis', analysis=analysis)
 
    # Generate visualizations
    viz_service = VisualizationService()
@@ -247,20 +292,29 @@ def analysis_detail(request, pk):
        'steganography_chart': viz_service.create_steganography_chart(analysis.steganography_result),
    }
 
-   # Generate RGB histogram charts (from actual uploaded image path)
-   # For now, we'll skip this since we don't persist uploaded images
-   # In Phase 2, we can add image file storage
+   # Generate RGB histogram charts from pre-computed RGB data
    rgb_charts = {}
    try:
-       # This will need the actual image path - will be implemented in Phase 2
-       # For now, we'll leave these as None
+       rgb_data = analysis.rgb_histogram_data
+       if rgb_data:
+           rgb_charts = {
+               'rgb_histogram': viz_service.create_rgb_histogram(rgb_data=rgb_data),
+               'color_distribution': viz_service.create_color_distribution_chart(rgb_data=rgb_data),
+               'color_stats': viz_service.create_color_space_analysis(rgb_data=rgb_data),
+           }
+       else:
+           rgb_charts = {
+               'rgb_histogram': None,
+               'color_distribution': None,
+               'color_stats': None,
+           }
+   except Exception as e:
+       logger.error(f"Error generating RGB charts: {e}")
        rgb_charts = {
            'rgb_histogram': None,
            'color_distribution': None,
            'color_stats': None,
        }
-   except Exception as e:
-       logger.error(f"Error generating RGB charts: {e}")
 
    charts.update(rgb_charts)
 
@@ -289,13 +343,39 @@ def analysis_detail(request, pk):
 
    charts.update(gps_charts)
 
+   # Build confidence scores context
+   ela_pct = analysis.ela_results.get('significant_pixels_percentage') if analysis.ela_results else None
+   confidence = {
+       'ela_tamper_confidence': round(ela_pct, 1) if ela_pct is not None else None,
+       'ela_tamper_label': _ela_confidence_label(ela_pct),
+       'ai_probability': round(analysis.deepfake_probability, 1) if analysis.deepfake_probability is not None else None,
+       'copy_move_match_count': analysis.copy_move_result.get('match_count', 0) if analysis.copy_move_result else 0,
+       'stego_detected': analysis.steganography_result and 'detected' in analysis.steganography_result.lower(),
+   }
+
    context = {
        'analysis': analysis,
        'charts': charts,
+       'confidence': confidence,
+       'ela_heatmap_b64': analysis.ela_heatmap_b64,
    }
    return render(request, 'analysis/analysis_detail.html', context)
 
 
+@login_required
+def analysis_status(request, pk):
+   """Return JSON status for a specific analysis (for AJAX polling)"""
+   analysis = get_object_or_404(ImageAnalysis, pk=pk, user=request.user)
+   return JsonResponse({
+       'status': analysis.status,
+       'progress_label': {
+           'pending': 'Queued',
+           'processing': 'Analyzing...',
+           'completed': 'Complete',
+           'failed': 'Failed',
+       }.get(analysis.status, analysis.status),
+       'error_message': analysis.error_message if analysis.status == 'failed' else None,
+   })
 
 
 @login_required
@@ -447,9 +527,34 @@ def compare_images(request):
 def comparison_detail(request, pk):
    """Display comparison results"""
    comparison = get_object_or_404(ImageComparison, pk=pk, user=request.user)
-  
+
+   viz_service = VisualizationService()
+   charts = {}
+
+   try:
+       cr = comparison.comparison_results or {}
+
+       # Similarity gauge chart
+       charts['similarity_gauge'] = viz_service.create_similarity_gauge(comparison.similarity_score)
+
+       # Channel similarity bar chart from color_analysis dict
+       ca = cr.get('color_analysis', {})
+       if ca:
+           charts['channel_comparison'] = viz_service.create_channel_comparison_chart(ca)
+       else:
+           charts['channel_comparison'] = None
+
+       # Difference region highlight if bounding box exists
+       diff_region = cr.get('difference_region', {})
+       charts['has_diff_region'] = diff_region.get('has_differences', False)
+       charts['diff_bounding_box'] = diff_region.get('bounding_box')
+
+   except Exception as e:
+       logger.error(f"Error generating comparison charts: {e}")
+
    context = {
        'comparison': comparison,
+       'charts': charts,
    }
    return render(request, 'analysis/comparison_detail.html', context)
 
@@ -465,3 +570,85 @@ def comparison_list(request):
        'comparisons': comparisons,
    }
    return render(request, 'analysis/comparison_list.html', context)
+
+def hex_to_hash(hexstr):
+    try:
+        return int(hexstr, 16)
+    except:
+        return 0
+
+def hamming_distance(h1, h2):
+    if not h1 or not h2:
+        return 999
+    try:
+        val1 = int(str(h1), 16)
+        val2 = int(str(h2), 16)
+        return bin(val1 ^ val2).count('1')
+    except:
+        return 999
+
+@login_required
+def network_graph(request):
+    """Display vis.js network graph of perceptual hash matches"""
+    import json
+    analyses = ImageAnalysis.objects.filter(user=request.user, status='completed')
+    
+    nodes = []
+    edges = []
+    
+    for a in analyses:
+        nodes.append({
+            'id': a.id,
+            'label': a.original_filename,
+            'title': f"Hash: {a.phash}",
+            'group': str(a.created_at.date())
+        })
+        
+    analysis_list = list(analyses)
+    for i in range(len(analysis_list)):
+        for j in range(i+1, len(analysis_list)):
+            a1 = analysis_list[i]
+            a2 = analysis_list[j]
+            
+            p_dist = hamming_distance(a1.phash, a2.phash)
+            
+            if p_dist < 15:
+                edges.append({
+                    'from': a1.id,
+                    'to': a2.id,
+                    'title': f"Hamming Distance: {p_dist}",
+                    'value': max(1, 15 - p_dist)
+                })
+                
+    context = {
+        'nodes': json.dumps(nodes),
+        'edges': json.dumps(edges),
+    }
+    return render(request, 'analysis/network_graph.html', context)
+
+from django.views.decorators.csrf import csrf_exempt
+
+@login_required
+@csrf_exempt
+def bot_ask_global_view(request):
+    import json
+    from django.http import JsonResponse
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            query = data.get('query', '')
+            history = data.get('history', [])
+            analysis_id = data.get('analysis_id', None)
+            
+            if analysis_id:
+                analysis = get_object_or_404(ImageAnalysis, pk=analysis_id, user=request.user)
+            else:
+                analysis = None
+                
+            from .bot_service import ForensicBotService
+            reply = ForensicBotService.answer_query(query, analysis, history)
+            
+            return JsonResponse({'reply': reply})
+        except Exception as e:
+            return JsonResponse({'reply': f'Error processing query: {str(e)}'}, status=500)
+    return JsonResponse({'reply': 'Method not allowed'}, status=405)

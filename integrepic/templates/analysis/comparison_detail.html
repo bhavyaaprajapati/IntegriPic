@@ -4,6 +4,9 @@
 {% block title %}Comparison Results - IntegriPic{% endblock %}
 
 {% block extra_css %}
+{% if charts %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+{% endif %}
 <style>
     .analysis-image {
         border: 2px solid rgba(128,128,128,0.2);
@@ -80,6 +83,11 @@
     <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-details" data-bs-toggle="tab" data-bs-target="#pane-details" type="button" role="tab">
             <i class="bi bi-camera me-1"></i> Image Details
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-viz" data-bs-toggle="tab" data-bs-target="#pane-viz" type="button" role="tab">
+            <i class="bi bi-graph-up me-1"></i> Visualizations
         </button>
     </li>
 </ul>
@@ -427,6 +435,45 @@
             <div class="stat-icon yellow mx-auto mb-3"><i class="bi bi-exclamation-square"></i></div>
             <h5 class="fw-bold">No Granular Data Discovered</h5>
             <p class="text-muted mb-0">Missing topological signatures necessary for accurate assessment.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Visualizations Tab -->
+    <div class="tab-pane fade" id="pane-viz" role="tabpanel">
+        <div class="row g-4">
+            <!-- Similarity Gauge -->
+            <div class="col-md-6">
+                {% if charts.similarity_gauge %}
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-0">
+                        {{ charts.similarity_gauge|safe }}
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-info">No gauge data available</div>
+                {% endif %}
+            </div>
+
+            <!-- Channel Comparison -->
+            <div class="col-md-6">
+                {% if charts.channel_comparison %}
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-0">
+                        {{ charts.channel_comparison|safe }}
+                    </div>
+                </div>
+                {% else %}
+                <div class="alert alert-info">No channel data available</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Difference Region Info -->
+        {% if charts.has_diff_region and charts.diff_bounding_box %}
+        <div class="alert alert-warning border-warning border-start border-4 bg-opacity-10 mt-4">
+            <h6 class="fw-bold"><i class="bi bi-bounding-box me-1"></i> Difference Region Detected</h6>
+            <p class="mb-0">Bounding box of maximum divergence: <code>{{ charts.diff_bounding_box }}</code></p>
         </div>
         {% endif %}
     </div>

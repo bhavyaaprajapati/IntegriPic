@@ -314,7 +314,42 @@ class ImageAnalysisService:
                 significant_pixels = sum(1 for p in pixel_differences if p > significant_diff_threshold)
                 total_pixels = len(pixel_differences)
                 significant_percentage = (significant_pixels / total_pixels) * 100 if total_pixels > 0 else 0
-                
+
+                # Generate heatmap visualization
+                heatmap_b64 = None
+                try:
+                    import numpy as np
+                    import base64
+                    from io import BytesIO
+
+                    # Convert diff image to numpy array
+                    diff_array = np.array(diff)  # Shape: (H, W, 3)
+                    gray = diff_array.mean(axis=2)  # (H, W) grayscale
+                    amplified = np.clip(gray * 10, 0, 255).astype(np.uint8)  # 10x amplification
+
+                    # Build RGBA heatmap: red channel = amplified intensity
+                    heatmap_array = np.zeros((amplified.shape[0], amplified.shape[1], 4), dtype=np.uint8)
+                    heatmap_array[:, :, 0] = amplified          # R
+                    heatmap_array[:, :, 3] = amplified          # Alpha
+
+                    from PIL import Image as PILImage
+                    heatmap_img = PILImage.fromarray(heatmap_array, 'RGBA')
+
+                    # Resize to max 800px wide
+                    max_width = 800
+                    if heatmap_img.width > max_width:
+                        ratio = max_width / heatmap_img.width
+                        heatmap_img = heatmap_img.resize(
+                            (max_width, int(heatmap_img.height * ratio)),
+                            PILImage.LANCZOS
+                        )
+
+                    buf = BytesIO()
+                    heatmap_img.save(buf, format='PNG')
+                    heatmap_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+                except Exception as e:
+                    logger.warning(f"Could not generate ELA heatmap: {e}")
+
                 return {
                     "status": "completed",
                     "quality": quality,
@@ -323,7 +358,8 @@ class ImageAnalysisService:
                     "significant_pixels_percentage": round(significant_percentage, 2),
                     "total_pixels": total_pixels,
                     "significant_pixels": significant_pixels,
-                    "analysis_notes": f"ELA analysis completed. {significant_percentage:.1f}% of pixels show significant differences."
+                    "analysis_notes": f"ELA analysis completed. {significant_percentage:.1f}% of pixels show significant differences.",
+                    "heatmap_b64": heatmap_b64
                 }
                     
             finally:
@@ -343,3 +379,300 @@ class ImageAnalysisService:
         except Exception as e:
             logger.error(f"Error getting system info: {e}")
             return "System information unavailable"
+
+    @staticmethod
+    def extract_rgb_data(image_path):
+        """Extract RGB histogram data, per-channel stats, and dominant colors.
+        Returns a dict suitable for storage in rgb_histogram_data JSONField."""
+        try:
+            import numpy as np
+
+            with Image.open(image_path) as img:
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                pixels = np.array(img)
+
+                r_vals = pixels[:, :, 0].flatten()
+                g_vals = pixels[:, :, 1].flatten()
+                b_vals = pixels[:, :, 2].flatten()
+
+                def channel_stats(arr):
+                    return {
+                        'mean': round(float(np.mean(arr)), 2),
+                        'std': round(float(np.std(arr)), 2),
+                        'min': int(np.min(arr)),
+                        'max': int(np.max(arr)),
+                    }
+
+                r_hist = np.histogram(r_vals, bins=256, range=(0, 256))[0].tolist()
+                g_hist = np.histogram(g_vals, bins=256, range=(0, 256))[0].tolist()
+                b_hist = np.histogram(b_vals, bins=256, range=(0, 256))[0].tolist()
+
+                # Dominant colors: reshape, get unique with counts, sort top 10
+                pixels_flat = pixels.reshape(-1, 3)
+                unique_colors, counts = np.unique(pixels_flat, axis=0, return_counts=True)
+                top_indices = np.argsort(counts)[-10:][::-1]
+                dominant_colors = [
+                    {
+                        'rgb': [int(unique_colors[i][0]), int(unique_colors[i][1]), int(unique_colors[i][2])],
+                        'hex': '#{:02x}{:02x}{:02x}'.format(
+                            int(unique_colors[i][0]), int(unique_colors[i][1]), int(unique_colors[i][2])
+                        ),
+                        'count': int(counts[i]),
+                    }
+                    for i in top_indices
+                ]
+
+                return {
+                    'r_hist': r_hist,
+                    'g_hist': g_hist,
+                    'b_hist': b_hist,
+                    'r_stats': channel_stats(r_vals),
+                    'g_stats': channel_stats(g_vals),
+                    'b_stats': channel_stats(b_vals),
+                    'dominant_colors': dominant_colors,
+                }
+        except Exception as e:
+            logger.error(f"Error extracting RGB data: {e}")
+            return {}
+
+    @staticmethod
+    def compute_perceptual_hashes(image_path):
+        """Compute pHash, dHash, aHash for near-duplicate detection.
+        Returns dict with 'phash', 'dhash', 'ahash' string values."""
+        try:
+            import imagehash
+            with Image.open(image_path) as img:
+                return {
+                    'phash': str(imagehash.phash(img)),
+                    'dhash': str(imagehash.dhash(img)),
+                    'ahash': str(imagehash.average_hash(img)),
+                }
+        except Exception as e:
+            logger.error(f"Error computing perceptual hashes: {e}")
+            return {'phash': None, 'dhash': None, 'ahash': None}
+
+    @staticmethod
+    def detect_timeline_inconsistencies(metadata):
+        """Analyze EXIF timestamps for forensic inconsistencies.
+        Returns a list of flag dicts: [{'severity': 'warning'|'critical', 'description': '...'}]"""
+        flags = []
+        try:
+            from datetime import datetime
+
+            def parse_exif_datetime(s):
+                if not s or s == 'Unknown':
+                    return None
+                for fmt in ('%Y:%m:%d %H:%M:%S', '%Y-%m-%d %H:%M:%S'):
+                    try:
+                        return datetime.strptime(str(s).strip(), fmt)
+                    except ValueError:
+                        continue
+                return None
+
+            dt_original = parse_exif_datetime(metadata.get('DateTimeOriginal'))
+            dt_modified = parse_exif_datetime(metadata.get('DateTime'))
+            software = metadata.get('Software', '')
+
+            # Flag 1: Modification date before original capture date
+            if dt_original and dt_modified and dt_modified < dt_original:
+                flags.append({
+                    'severity': 'critical',
+                    'field': 'DateTime vs DateTimeOriginal',
+                    'description': (
+                        f"File modification timestamp ({dt_modified}) is earlier than "
+                        f"capture timestamp ({dt_original}). This is physically impossible "
+                        "and strongly indicates metadata tampering."
+                    )
+                })
+
+            # Flag 2: Software modification date present (implies post-processing)
+            if software and software not in ('Unknown', ''):
+                non_camera_software = ['photoshop', 'gimp', 'lightroom', 'affinity',
+                                       'paint', 'snapseed', 'instagram', 'whatsapp']
+                if any(s in software.lower() for s in non_camera_software):
+                    flags.append({
+                        'severity': 'warning',
+                        'field': 'Software',
+                        'description': (
+                            f"Image was processed by editing software: '{software}'. "
+                            "The original capture metadata may have been altered."
+                        )
+                    })
+
+            # Flag 3: Capture date in the future
+            now = datetime.utcnow()
+            if dt_original and dt_original > now:
+                flags.append({
+                    'severity': 'critical',
+                    'field': 'DateTimeOriginal',
+                    'description': (
+                        f"Capture date ({dt_original}) is in the future ({now}). "
+                        "This indicates the date/time has been tampered with."
+                    )
+                })
+
+        except Exception as e:
+            logger.error(f"Error detecting timeline inconsistencies: {e}")
+
+        return flags
+
+    @staticmethod
+    def detect_copy_move(image_path):
+        """Detect copy-move forgery using SIFT feature matching.
+        Returns a dict: {'detected': bool, 'match_count': int, 'notes': str}"""
+        try:
+            import cv2
+            import numpy as np
+
+            img = cv2.imread(image_path)
+            if img is None:
+                return {'detected': False, 'match_count': 0, 'notes': 'Could not load image'}
+
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+            # Use SIFT to find keypoints and descriptors
+            sift = cv2.SIFT_create()
+            keypoints, descriptors = sift.detectAndCompute(gray, None)
+
+            if descriptors is None or len(keypoints) < 10:
+                return {'detected': False, 'match_count': 0, 'notes': 'Insufficient features'}
+
+            # Match descriptors against themselves using BFMatcher
+            bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
+            matches = bf.match(descriptors, descriptors)
+
+            # Filter out self-matches (same keypoint) and find pairs with high spatial offset
+            significant_matches = 0
+            MIN_SPATIAL_DISTANCE = 20  # pixels
+
+            for m in matches:
+                if m.queryIdx == m.trainIdx:
+                    continue  # skip self-matches
+                pt1 = keypoints[m.queryIdx].pt
+                pt2 = keypoints[m.trainIdx].pt
+                dist = np.sqrt((pt1[0] - pt2[0])**2 + (pt1[1] - pt2[1])**2)
+                if dist > MIN_SPATIAL_DISTANCE:
+                    significant_matches += 1
+
+            detected = significant_matches >= 10  # threshold for suspicion
+            return {
+                'detected': detected,
+                'match_count': significant_matches,
+                'notes': (
+                    f"Found {significant_matches} spatially-separated duplicate feature matches. "
+                    "This may indicate copy-move forgery." if detected
+                    else f"No significant copy-move patterns detected ({significant_matches} matches below threshold)."
+                )
+            }
+        except Exception as e:
+            logger.error(f"Error in copy-move detection: {e}")
+            return {'detected': False, 'match_count': 0, 'notes': f'Error: {str(e)}'}
+
+    @staticmethod
+    def compute_ai_probability(ela_results, copy_move_result, metadata):
+        """Compute AI generation probability using forensic heuristics.
+        Returns tuple: (score: float 0-100, notes: str)
+
+        Key Indicators:
+        - NO EXIF + LOW ELA = VERY strong AI indicator (combination matters)
+        - NO EXIF alone = moderate indicator (could be screenshot/edited)
+        - LOW ELA alone = moderate indicator (could be clean photo)
+        - Copy-move presence = indicates human tampering (reduces AI prob)
+        - Metadata inconsistencies = indicates tampering
+        """
+        score = 0.0
+        notes = []
+
+        try:
+            # Extract key forensic indicators
+            ela_sig_pct = None
+            if ela_results:
+                ela_sig_pct = ela_results.get('significant_pixels_percentage')
+
+            has_exif = metadata and bool(metadata.get('exif'))
+            timeline_flags = metadata.get('timeline_flags', []) if metadata else []
+            copy_move_count = copy_move_result.get('match_count', 0) if copy_move_result else 0
+
+            # CRITICAL COMBINATION: No EXIF + Very Low ELA = Strong AI indicator
+            if not has_exif and ela_sig_pct is not None and ela_sig_pct < 1.0:
+                score += 50
+                notes.append("No camera metadata + extremely clean compression profile (hallmark of AI)")
+            else:
+                # Individual indicators when not combined
+                if not has_exif:
+                    score += 20
+                    notes.append("No EXIF metadata (not from camera or stripped)")
+
+                if ela_sig_pct is not None:
+                    if ela_sig_pct < 1.0:
+                        score += 25
+                        notes.append("Extremely low ELA activity (too clean for real camera)")
+                    elif ela_sig_pct < 3.0:
+                        score += 10
+                        notes.append("Unusually low compression artifacts")
+
+            # Metadata timestamp inconsistencies suggest tampering (not AI)
+            if timeline_flags and len(timeline_flags) > 0:
+                score += 10
+                notes.append(f"Metadata timestamp inconsistencies detected ({len(timeline_flags)} flags)")
+
+            # Copy-move forgery indicates HUMAN tampering (reduces AI probability)
+            if copy_move_count > 5:
+                score -= 15  # Stronger penalty: human copy-paste is opposite of AI
+                notes.append("Copy-move forgery detected (indicates human tampering)")
+            elif copy_move_count > 0:
+                score -= 5
+                notes.append(f"Minor copy-move regions ({copy_move_count} matches)")
+
+            # Clamp to [0, 100]
+            score = max(0.0, min(100.0, score))
+
+            # Generate confidence description
+            if not notes:
+                notes_str = "Within normal forensic range"
+            else:
+                notes_str = "; ".join(notes)
+
+            return score, notes_str
+
+        except Exception as e:
+            logger.error(f"Error computing AI probability: {e}")
+            return 0.0, f"Error: {str(e)}"
+
+
+class AuditService:
+    """Service for logging audit trail for forensic chain of custody"""
+
+    @staticmethod
+    def get_client_ip(request):
+        """Extract client IP address from request"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0].strip()
+        return request.META.get('REMOTE_ADDR')
+
+    @staticmethod
+    def log(request, action_type, analysis=None, comparison=None, extra_data=None):
+        """Create an audit log entry. Silently catches exceptions."""
+        try:
+            from .models import AuditLog
+            import json
+
+            result_hash = ''
+            if analysis and analysis.ela_results:
+                result_hash = hashlib.sha256(
+                    json.dumps(analysis.ela_results, sort_keys=True).encode()
+                ).hexdigest()
+
+            AuditLog.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                action_type=action_type,
+                analysis=analysis,
+                comparison=comparison,
+                ip_address=AuditService.get_client_ip(request),
+                result_hash=result_hash,
+                extra_data=extra_data or {},
+            )
+        except Exception as e:
+            logger.error(f"Audit log error: {e}")

@@ -144,8 +144,8 @@
                                 </td>
                                 <td class="text-end pe-4">
                                     <div class="btn-group shadow-sm">
-                                        <a href="{% url 'reports:view_report' report.id %}" class="btn btn-sm btn-light border-end" title="View"><i class="bi bi-eye text-primary"></i></a>
-                                        <a href="{% url 'reports:download_report' report.id %}" class="btn btn-sm btn-light border-end" title="Download"><i class="bi bi-download text-success"></i></a>
+                                        <a href="{% url 'reports:view_report' report.report_type report.id %}" class="btn btn-sm btn-light border-end" title="View"><i class="bi bi-eye text-primary"></i></a>
+                                        <a href="{% url 'reports:download_report' report.report_type report.id %}" class="btn btn-sm btn-light border-end" title="Download"><i class="bi bi-download text-success"></i></a>
                                         {% if perms.reports.delete_analysisreport or perms.reports.delete_comparisonreport %}
                                             <button class="btn btn-sm btn-light" onclick="deleteReport({{ report.id }}, '{{ report.report_type }}')" title="Delete"><i class="bi bi-trash text-danger"></i></button>
                                         {% endif %}

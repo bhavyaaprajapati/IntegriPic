@@ -1,73 +1,86 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ report.report_title }} - IntegriPic{% endblock %}
+{% block title %}{{ report.report_title }} - Archive - IntegriPic{% endblock %}
+
+{% block page_header %}
+<div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom d-print-none" style="border-color: var(--border-color) !important;">
+    <div class="d-flex align-items-center gap-3">
+        <button onclick="window.history.back()" class="btn btn-sm btn-secondary d-flex align-items-center gap-2 px-3 fw-medium" style="border: none !important; background: rgba(255,255,255,0.03) !important;">
+            <i class="bi bi-arrow-left text-muted"></i> Back
+        </button>
+        <div class="text-muted fw-medium" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+            Data Forensics <span class="mx-2 opacity-30">/</span> Reports <span class="mx-2 opacity-30">/</span> <span class="text-main">Extract View</span>
+        </div>
+    </div>
+    <button onclick="window.print()" class="btn btn-primary btn-sm px-4 shadow-sm fw-medium d-flex align-items-center gap-2">
+        <i class="bi bi-printer"></i> Print Ledger
+    </button>
+</div>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid px-0">
     <div class="row">
         <div class="col-lg-12">
             <!-- Print Header - only visible during printing -->
-            <div class="d-none d-print-block text-center mb-5 pb-3 border-bottom">
-                <h2 class="fw-bold">IntegriPic Forensic Platform</h2>
-                <h4 class="text-muted">Official System Report</h4>
-                <p>Generated: {{ report.created_at|date:"M d, Y H:i" }} | ID: {{ report.id }}</p>
+            <div class="d-none d-print-block text-center mb-5 pb-3 border-bottom text-dark">
+                <h2 class="fw-bold text-dark">IntegriPic Core Matrix</h2>
+                <h4 class="text-muted">Official Encrypted System Report</h4>
+                <p>Generated: {{ report.created_at|date:"M d, Y H:i" }} | Unique Protocol ID: {{ report.id }}</p>
             </div>
 
             <!-- Report Header -->
-            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 p-4 card border-0 shadow-sm report-header-block" style="border-radius: 16px;">
-                <div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 p-4 card border-0 shadow-sm report-header-block position-relative overflow-hidden" style="border-radius: 16px;">
+                <div class="position-absolute" style="top: -50px; right: -50px; width: 200px; height: 200px; background: var(--primary-glow); filter: blur(70px); opacity: 0.3; border-radius: 50%; pointer-events: none;"></div>
+                <div class="position-relative z-index-1 w-100">
                     <div class="d-flex align-items-center gap-3 mb-2">
-                        <div class="stat-icon {% if report.analysis %}blue{% else %}yellow{% endif %} shadow-sm" style="width: 50px; height: 50px; border-radius: 12px; font-size: 1.4rem;">
-                            <i class="bi {% if report.analysis %}bi-file-earmark-binary{% else %}bi-images{% endif %}"></i>
+                        <div class="d-flex align-items-center justify-content-center shadow-sm" style="width: 50px; height: 50px; border-radius: 12px; font-size: 1.4rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: {% if report.analysis %}var(--secondary){% else %}#10b981{% endif %};">
+                            <i class="bi {% if report.analysis %}bi-search{% else %}bi-intersect{% endif %}"></i>
                         </div>
-                        <h2 class="fw-bolder mb-0 text-dark">{{ report.report_title }}</h2>
+                        <h2 class="fw-bolder mb-0 text-main" style="letter-spacing: -0.5px;">{{ report.report_title }}</h2>
                     </div>
-                    <div class="text-muted fw-medium ms-1">
-                        <i class="bi bi-clock me-1"></i> Generated on {{ report.created_at|date:"F j, Y, g:i a" }} by {{ report.user.get_full_name|default:report.user.username }}
+                    <div class="text-muted fw-medium ms-1 mt-2">
+                        <i class="bi bi-calendar-event me-1"></i> Generated protocol on {{ report.created_at|date:"F j, Y, g:i a" }} by {{ report.user.get_full_name|default:report.user.username }}
                     </div>
-                </div>
-                <div class="d-flex gap-2 mt-3 mt-md-0 d-print-none">
-                    <a href="{% url 'reports:user_reports' %}" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 50px;"><i class="bi bi-arrow-left me-2"></i>Back</a>
-                    <button onclick="window.print()" class="btn btn-primary px-4 py-2 shadow-sm" style="border-radius: 50px;"><i class="bi bi-printer me-2"></i>Print Ledger</button>
                 </div>
             </div>
 
             {% if report.analysis %}
                 <!-- Single Image Analysis Report -->
-                <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
-                    <div class="card-header bg-primary text-white pt-4 pb-3 px-4 border-0">
-                        <h4 class="card-title fw-bold mb-0 d-flex align-items-center"><i class="bi bi-search me-2"></i> Deep Analysis Extraction Details</h4>
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden; background: var(--bg-surface);">
+                    <div class="pt-4 pb-3 px-4" style="background: rgba(59,130,246,0.05); border-bottom: 1px solid var(--border-color);">
+                        <h4 class="card-title fw-bolder mb-0 d-flex align-items-center text-main" style="letter-spacing: -0.5px;"><i class="bi bi-search me-2 text-secondary"></i> Deep Analysis Extraction Details</h4>
                     </div>
                     <div class="card-body p-4 p-md-5">
                         <div class="row g-5">
-                            <div class="col-md-6 border-md-end pe-md-5">
-                                <h5 class="fw-bold text-dark mb-4 pb-2 border-bottom">File Forensics Identity</h5>
+                            <div class="col-md-6 border-md-end pe-md-5" style="border-color: var(--border-color) !important;">
+                                <h5 class="fw-bold text-main mb-4 pb-2 border-bottom" style="border-color: var(--border-color) !important; letter-spacing: -0.5px;">File Forensics Identity</h5>
                                 <table class="table table-borderless table-sm mb-0">
                                     <tbody>
                                         <tr>
-                                            <td class="text-muted fw-semibold pb-3" style="width: 130px;">Source File</td>
-                                            <td class="fw-bold text-dark pb-3 text-break">{{ report.analysis.original_filename }}</td>
+                                            <td class="text-muted fw-semibold pb-3 text-uppercase" style="width: 140px; font-size: 0.8rem; letter-spacing: 1px;">Source File</td>
+                                            <td class="fw-medium text-main pb-3 text-break">{{ report.analysis.original_filename }}</td>
                                         </tr>
                                         <tr>
-                                            <td class="text-muted fw-semibold pb-3">Format Type</td>
-                                            <td class="pb-3"><span class="badge bg-light text-primary border px-3 py-2 rounded-pill">{{ report.analysis.image_format }}</span></td>
+                                            <td class="text-muted fw-semibold pb-3 text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Format Type</td>
+                                            <td class="pb-3"><span class="badge text-main border px-3 py-2 rounded-pill" style="background: rgba(255,255,255,0.03); border-color: var(--border-color) !important;">{{ report.analysis.image_format }}</span></td>
                                         </tr>
                                         <tr>
-                                            <td class="text-muted fw-semibold pb-3">Data Footprint</td>
-                                            <td class="fw-medium text-dark pb-3">{{ report.analysis.file_size_mb }} MB</td>
+                                            <td class="text-muted fw-semibold pb-3 text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Data Footprint</td>
+                                            <td class="fw-medium text-main pb-3">{{ report.analysis.file_size_mb }} MB</td>
                                         </tr>
                                         <tr>
-                                            <td class="text-muted fw-semibold pb-3">Integrity Hash</td>
-                                            <td class="pb-3"><code class="text-body bg-light px-2 py-1 rounded border">{{ report.analysis.sha256_hash|default:"N/A"|truncatechars:32 }}...</code></td>
+                                            <td class="text-muted fw-semibold pb-3 text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Integrity Hash</td>
+                                            <td class="pb-3"><code class="text-primary px-2 py-1 rounded" style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.2);">{{ report.analysis.sha256_hash|default:"N/A"|truncatechars:32 }}...</code></td>
                                         </tr>
                                         <tr>
-                                            <td class="text-muted fw-semibold pb-3">Ingestion Time</td>
-                                            <td class="fw-medium text-dark pb-3">{{ report.analysis.created_at|date:"M d, Y H:i" }}</td>
+                                            <td class="text-muted fw-semibold pb-3 text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Ingestion Time</td>
+                                            <td class="fw-medium text-main pb-3">{{ report.analysis.created_at|date:"M d, Y H:i" }}</td>
                                         </tr>
                                         <tr>
-                                            <td class="text-muted fw-semibold pb-0">Run Status</td>
+                                            <td class="text-muted fw-semibold pb-0 text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Run Status</td>
                                             <td class="pb-0">
-                                                <span class="badge px-3 py-2 rounded-pill {% if report.analysis.status == 'completed' %}bg-success text-white{% else %}bg-warning text-dark{% endif %}">
+                                                <span class="badge px-3 py-2 rounded-pill fw-semibold {% if report.analysis.status == 'completed' %}text-success{% else %}text-warning{% endif %}" style="background: {% if report.analysis.status == 'completed' %}rgba(16,185,129,0.1){% else %}rgba(245,158,11,0.1){% endif %}; border: 1px solid {% if report.analysis.status == 'completed' %}rgba(16,185,129,0.2){% else %}rgba(245,158,11,0.2){% endif %};">
                                                     {{ report.analysis.get_status_display|upper }}
                                                 </span>
                                             </td>
@@ -76,37 +89,37 @@
                                 </table>
                             </div>
                             <div class="col-md-6 ps-md-5">
-                                <h5 class="fw-bold text-dark mb-4 pb-2 border-bottom">Heuristics & Verification</h5>
+                                <h5 class="fw-bold text-main mb-4 pb-2 border-bottom" style="border-color: var(--border-color) !important; letter-spacing: -0.5px;">Heuristics & Verification</h5>
                                 
                                 <!-- Steganography Analysis -->
                                 {% if report.analysis.steganography_result %}
-                                    <div class="alert bg-light border-start border-4 border-info shadow-sm mb-4">
-                                        <div class="fw-bold text-info mb-2 d-flex align-items-center"><i class="bi bi-shield-check me-2 fs-5"></i> Steganography Discovery Phase</div>
-                                        <div class="text-dark fw-medium">{{ report.analysis.steganography_result }}</div>
+                                    <div class="alert shadow-sm mb-4" style="background: rgba(14, 165, 233, 0.05); border-left: 4px solid #0ea5e9; border-top: none; border-right: none; border-bottom: none; border-radius: 8px;">
+                                        <div class="fw-bold mb-2 d-flex align-items-center" style="color: #0ea5e9;"><i class="bi bi-shield-check me-2 fs-5"></i> Steganography Discovery Phase</div>
+                                        <div class="text-main fw-medium" style="font-size: 0.95rem; line-height: 1.5;">{{ report.analysis.steganography_result }}</div>
                                         {% if report.analysis.steganography_message %}
                                             <div class="mt-3">
-                                                <div class="text-muted small fw-bold text-uppercase mb-1">Payload Extracted:</div>
-                                                <div class="p-3 bg-white rounded border text-break"><code>{{ report.analysis.steganography_message }}</code></div>
+                                                <div class="text-muted small fw-bold text-uppercase mb-1" style="letter-spacing: 1px;">Payload Extracted:</div>
+                                                <div class="p-3 rounded text-break" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color);"><code style="color: #38bdf8;">{{ report.analysis.steganography_message }}</code></div>
                                             </div>
                                         {% endif %}
                                     </div>
                                 {% endif %}
 
                                 <!-- ELA Analysis -->
-                                {% if report.analysis.ela_result %}
-                                    <div class="alert bg-light border-start border-4 border-warning shadow-sm mb-4">
-                                        <div class="fw-bold text-warning mb-2 d-flex align-items-center"><i class="bi bi-graph-up-arrow me-2 fs-5"></i> Error Level Matrix</div>
-                                        <div class="text-dark small lh-base">{{ report.analysis.ela_result|truncatechars:200 }}</div>
+                                {% if report.analysis.ela_results %}
+                                    <div class="alert shadow-sm mb-4" style="background: rgba(245, 158, 11, 0.05); border-left: 4px solid var(--accent-orange); border-top: none; border-right: none; border-bottom: none; border-radius: 8px;">
+                                        <div class="fw-bold mb-2 d-flex align-items-center" style="color: var(--accent-orange);"><i class="bi bi-graph-up-arrow me-2 fs-5"></i> Error Level Matrix</div>
+                                        <div class="text-main small lh-base" style="font-family: monospace;">{{ report.analysis.ela_results|truncatechars:300 }}</div>
                                     </div>
                                 {% endif %}
 
                                 <!-- System Information -->
-                                {% if report.analysis.system_info %}
-                                    <div class="d-flex align-items-start gap-2 text-muted mt-4 bg-light p-3 rounded-3 border">
-                                        <i class="bi bi-hdd-rack text-secondary mt-1"></i>
-                                        <div class="small lh-sm">
-                                            <span class="fw-bold d-block mb-1 text-dark">Processing Apparatus Protocol</span>
-                                            {{ report.analysis.system_info }}
+                                {% if report.analysis.os_info %}
+                                    <div class="d-flex align-items-start gap-3 mt-4 p-3 rounded-3" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+                                        <i class="bi bi-hdd-rack text-muted mt-1 fs-5"></i>
+                                        <div class="small lh-sm text-muted">
+                                            <span class="fw-semibold d-block mb-1 text-main text-uppercase" style="letter-spacing: 0.5px;">Node Apparatus Protocol</span>
+                                            {{ report.analysis.os_info }}
                                         </div>
                                     </div>
                                 {% endif %}
@@ -117,37 +130,37 @@
 
             {% else %}
                 <!-- Image Comparison Report -->
-                <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
-                    <div class="card-header bg-success text-white pt-4 pb-3 px-4 border-0">
-                        <h4 class="card-title fw-bold mb-0 d-flex align-items-center"><i class="bi bi-intersect me-2"></i> Comparative Analysis Results</h4>
+                <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden; background: var(--bg-surface);">
+                    <div class="pt-4 pb-3 px-4" style="background: rgba(16,185,129,0.05); border-bottom: 1px solid var(--border-color);">
+                        <h4 class="card-title fw-bolder mb-0 d-flex align-items-center text-main" style="letter-spacing: -0.5px;"><i class="bi bi-intersect me-2" style="color: #10b981;"></i> Comparative Analysis Results</h4>
                     </div>
                     <div class="card-body p-4 p-md-5">
                         <div class="row g-5">
-                            <div class="col-md-6 border-md-end pe-md-5">
-                                <h5 class="fw-bold text-dark mb-4 pb-2 border-bottom">Control References</h5>
-                                <div class="p-4 bg-light rounded-3 mb-4 border shadow-sm">
-                                    <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">
-                                        <div class="badge bg-secondary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:30px;height:30px;">A</div>
-                                        <div class="fw-bold text-dark text-break">{{ report.comparison.image1_filename }}</div>
+                            <div class="col-md-6 border-md-end pe-md-5" style="border-color: var(--border-color) !important;">
+                                <h5 class="fw-bold text-main mb-4 pb-2 border-bottom" style="border-color: var(--border-color) !important; letter-spacing: -0.5px;">Control References</h5>
+                                <div class="p-4 rounded-3 mb-4" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color);">
+                                    <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom" style="border-color: var(--border-color) !important;">
+                                        <div class="badge rounded-circle p-2 d-flex align-items-center justify-content-center text-primary" style="width:30px;height:30px; background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3);">A</div>
+                                        <div class="fw-medium text-main text-break">{{ report.comparison.image1_filename }}</div>
                                     </div>
                                     <div class="d-flex align-items-center gap-3">
-                                        <div class="badge bg-secondary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:30px;height:30px;">B</div>
-                                        <div class="fw-bold text-dark text-break">{{ report.comparison.image2_filename }}</div>
+                                        <div class="badge rounded-circle p-2 d-flex align-items-center justify-content-center text-secondary" style="width:30px;height:30px; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3);">B</div>
+                                        <div class="fw-medium text-main text-break">{{ report.comparison.image2_filename }}</div>
                                     </div>
                                 </div>
                                 <table class="table table-borderless table-sm mb-0">
                                     <tbody>
                                         <tr>
-                                            <td class="text-muted fw-semibold pb-3" style="width: 140px;">Execution Date</td>
-                                            <td class="fw-medium text-dark pb-3">{{ report.comparison.created_at|date:"M d, Y H:i" }}</td>
+                                            <td class="text-muted fw-semibold pb-3 text-uppercase" style="width: 140px; font-size: 0.8rem; letter-spacing: 1px;">Execution Date</td>
+                                            <td class="fw-medium text-main pb-3">{{ report.comparison.created_at|date:"M d, Y H:i" }}</td>
                                         </tr>
                                         <tr>
-                                            <td class="text-muted fw-semibold pb-0">Verdict</td>
+                                            <td class="text-muted fw-semibold pb-0 text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">Verdict</td>
                                             <td class="pb-0">
                                                 {% if report.comparison.are_identical %}
-                                                    <span class="badge bg-success px-3 py-2 rounded-pill"><i class="bi bi-check-circle-fill me-1"></i> EXACT MATCH</span>
+                                                    <span class="badge px-3 py-2 rounded-pill fw-semibold" style="background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.3);"><i class="bi bi-check-circle-fill me-1"></i> EXACT MATCH</span>
                                                 {% else %}
-                                                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill"><i class="bi bi-exclamation-triangle-fill me-1"></i> DEVIATION</span>
+                                                    <span class="badge px-3 py-2 rounded-pill fw-semibold" style="background: rgba(245,158,11,0.1); color: var(--accent-orange); border: 1px solid rgba(245,158,11,0.3);"><i class="bi bi-exclamation-triangle-fill me-1"></i> DEVIATION</span>
                                                 {% endif %}
                                             </td>
                                         </tr>
@@ -155,20 +168,20 @@
                                 </table>
                             </div>
                             <div class="col-md-6 ps-md-5 d-flex flex-column justify-content-center">
-                                <h5 class="fw-bold text-dark mb-4 pb-2 border-bottom">Final Deduction</h5>
-                                <div class="p-4 rounded-3 border-start border-4 shadow-sm {% if report.comparison.are_identical %}bg-success bg-opacity-10 border-success{% else %}bg-warning bg-opacity-10 border-warning{% endif %}">
+                                <h5 class="fw-bold text-main mb-4 pb-2 border-bottom" style="border-color: var(--border-color) !important; letter-spacing: -0.5px;">Final Deduction</h5>
+                                <div class="p-4 rounded-3 text-main {% if report.comparison.are_identical %}border-success{% else %}border-warning{% endif %}" style="background: {% if report.comparison.are_identical %}rgba(16,185,129,0.05){% else %}rgba(245,158,11,0.05){% endif %}; border-left: 4px solid !important;">
                                     {% if report.comparison.are_identical %}
                                         <div class="d-flex align-items-center text-success mb-2 gap-2">
                                             <i class="bi bi-shield-check fs-2"></i>
                                             <h4 class="fw-bold mb-0">Identity Confirmed</h4>
                                         </div>
-                                        <p class="text-dark fw-medium mb-0 lh-lg">Cryptographic and structural reviews conclude that the references A and B are pixel-perfect counterparts. No distortions or modifications were detected during comparison.</p>
+                                        <p class="opacity-75 fw-medium mb-0 lh-lg" style="font-size: 0.95rem;">Cryptographic and structural reviews conclude that the references A and B are pixel-perfect counterparts. No distortions or modifications were detected during comparison.</p>
                                     {% else %}
-                                        <div class="d-flex align-items-center text-warning mb-2 gap-2">
-                                            <i class="bi bi-shield-exclamation fs-2" style="color:#b45309;"></i>
-                                            <h4 class="fw-bold mb-0" style="color:#b45309;">Anomaly Present</h4>
+                                        <div class="d-flex align-items-center text-warning mb-2 gap-2" style="color: var(--accent-orange) !important;">
+                                            <i class="bi bi-shield-exclamation fs-2"></i>
+                                            <h4 class="fw-bold mb-0">Anomaly Present</h4>
                                         </div>
-                                        <p class="text-dark fw-medium mb-0 lh-lg">Differences were reliably detected bridging reference A and B. This could correlate to hostile modifications, lossy compression artifacts, format transcodes, or altogether dissimilar source files.</p>
+                                        <p class="opacity-75 fw-medium mb-0 lh-lg" style="font-size: 0.95rem;">Differences were reliably detected bridging reference A and B. This could correlate to hostile modifications, lossy compression artifacts, format transcodes, or altogether dissimilar source files.</p>
                                     {% endif %}
                                 </div>
                             </div>
@@ -183,7 +196,7 @@
 
 <style>
 @media print {
-    body { background: white !important; }
+    body { background: white !important; color: black !important; }
     .btn, .navbar, .sidebar, .d-print-none, .report-header-block {
         display: none !important;
     }
@@ -196,9 +209,11 @@
         width: 100% !important;
         max-width: 100% !important;
     }
-    .card { box-shadow: none !important; border: 1px solid #dee2e6 !important; }
-    .bg-light { background-color: white !important; }
-    .shadow-sm { box-shadow: none !important; }
+    .card { box-shadow: none !important; border: 1px solid #dee2e6 !important; background: white !important; }
+    .badge { border: 1px solid #ccc !important; color: black !important; background: transparent !important; }
+    .table td { color: black !important; border-bottom: 1px solid #eee; }
+    .text-main, .text-muted, h4, h5, h2 { color: black !important; }
+    .alert { background: white !important; border: 1px solid #ccc !important; border-left: 4px solid #333 !important; }
 }
 </style>
 {% endblock %}

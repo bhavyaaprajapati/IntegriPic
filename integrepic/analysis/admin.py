@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ImageAnalysis, ImageComparison
+from .models import ImageAnalysis, ImageComparison, AuditLog
 
 @admin.register(ImageAnalysis)
 class ImageAnalysisAdmin(admin.ModelAdmin):
@@ -20,3 +20,21 @@ class ImageComparisonAdmin(admin.ModelAdmin):
     search_fields = ('image1_filename', 'image2_filename', 'user__username', 'image1_hash', 'image2_hash')
     readonly_fields = ('created_at', 'image1_hash', 'image2_hash', 'comparison_results')
     ordering = ('-created_at',)
+
+@admin.register(AuditLog)
+class AuditLogAdmin(admin.ModelAdmin):
+    list_display = ('user', 'action_type', 'analysis', 'timestamp', 'ip_address')
+    list_filter = ('action_type', 'timestamp')
+    search_fields = ('user__username', 'ip_address')
+    readonly_fields = ('user', 'action_type', 'analysis', 'comparison', 'timestamp', 'ip_address', 'result_hash', 'extra_data')
+    ordering = ('-timestamp',)
+
+    # Prevent any modification of audit logs
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

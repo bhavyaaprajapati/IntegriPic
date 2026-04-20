@@ -14,13 +14,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Try to import WeasyPrint for PDF generation
+# Try to import xhtml2pdf for PDF generation
 try:
-    from weasyprint import HTML, CSS
-    WEASYPRINT_AVAILABLE = True
-except (ImportError, OSError) as e:
-    WEASYPRINT_AVAILABLE = False
-    logger.warning(f"WeasyPrint not available: {e}")
+    from xhtml2pdf import pisa
+    PDF_AVAILABLE = True
+except ImportError as e:
+    PDF_AVAILABLE = False
+    logger.warning(f"PDF generation not available: {e}")
 
 
 @login_required
@@ -42,7 +42,7 @@ def generate_analysis_report(request, analysis_pk):
     else:
         messages.info(request, 'Report already exists. Displaying existing report.')
     
-    return redirect('reports:view_report', report_id=report.id)
+    return redirect('reports:view_report', report_type='analysis', report_id=report.id)
 
 
 @login_required
@@ -64,17 +64,18 @@ def generate_comparison_report(request, comparison_pk):
     else:
         messages.info(request, 'Report already exists. Displaying existing report.')
     
-    return redirect('reports:view_report', report_id=report.id)
+    return redirect('reports:view_report', report_type='comparison', report_id=report.id)
 
 
 @login_required
-def view_report(request, report_id):
+def view_report(request, report_type, report_id):
     """View a specific report"""
-    # Try to find the report in both tables
-    analysis_report = AnalysisReport.objects.filter(id=report_id).first()
-    comparison_report = ComparisonReport.objects.filter(id=report_id).first()
-    
-    report = analysis_report or comparison_report
+    if report_type == 'analysis':
+        report = AnalysisReport.objects.filter(id=report_id).first()
+    elif report_type == 'comparison':
+        report = ComparisonReport.objects.filter(id=report_id).first()
+    else:
+        report = None
     
     if not report:
         raise Http404("Report not found")
@@ -145,13 +146,14 @@ def admin_reports(request):
 
 
 @login_required
-def download_report(request, report_id):
+def download_report(request, report_type, report_id):
     """Download report as PDF or HTML file"""
-    # Try to find the report in both tables
-    analysis_report = AnalysisReport.objects.filter(id=report_id).first()
-    comparison_report = ComparisonReport.objects.filter(id=report_id).first()
-
-    report = analysis_report or comparison_report
+    if report_type == 'analysis':
+        report = AnalysisReport.objects.filter(id=report_id).first()
+    elif report_type == 'comparison':
+        report = ComparisonReport.objects.filter(id=report_id).first()
+    else:
+        report = None
 
     if not report:
         raise Http404("Report not found")
@@ -166,14 +168,19 @@ def download_report(request, report_id):
             'report': report,
         }, request=request)
 
-        # Try to generate PDF if WeasyPrint is available
-        if WEASYPRINT_AVAILABLE:
+        # Try to generate PDF if xhtml2pdf is available
+        if PDF_AVAILABLE:
             try:
-                pdf_bytes = HTML(string=html_content).write_pdf()
-                filename = f"IntegriPic_Report_{report.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-                response = HttpResponse(pdf_bytes, content_type='application/pdf')
-                response['Content-Disposition'] = f'attachment; filename="{filename}"'
-                return response
+                from io import BytesIO
+                pdf_file = BytesIO()
+                pisa.CreatePDF(html_content, pdf_file)
+                pdf_bytes = pdf_file.getvalue()
+
+                if pdf_bytes:
+                    filename = f"IntegriPic_Report_{report.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+                    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+                    return response
             except Exception as pdf_error:
                 logger.warning(f"PDF generation failed, falling back to HTML: {pdf_error}")
                 # Fall through to HTML response
@@ -191,13 +198,14 @@ def download_report(request, report_id):
 
 
 @staff_member_required
-def delete_report(request, report_id):
+def delete_report(request, report_type, report_id):
     """Delete a report (admin only)"""
-    # Try to find the report in both tables
-    analysis_report = AnalysisReport.objects.filter(id=report_id).first()
-    comparison_report = ComparisonReport.objects.filter(id=report_id).first()
-    
-    report = analysis_report or comparison_report
+    if report_type == 'analysis':
+        report = AnalysisReport.objects.filter(id=report_id).first()
+    elif report_type == 'comparison':
+        report = ComparisonReport.objects.filter(id=report_id).first()
+    else:
+        report = None
     
     if not report:
         messages.error(request, 'Report not found.')
@@ -283,11 +291,12 @@ def admin_comparison_report(request, comparison_pk):
 @login_required
 def export_analysis_pdf(request, analysis_pk):
     """Export analysis report as PDF"""
-    if not WEASYPRINT_AVAILABLE:
-        messages.error(request, "PDF export is not available. Please install WeasyPrint dependencies.")
+    if not PDF_AVAILABLE:
+        messages.error(request, "PDF export is not available. Downloading as HTML instead.")
         return redirect('analysis:analysis_detail', pk=analysis_pk)
 
     try:
+        from io import BytesIO
         analysis = get_object_or_404(ImageAnalysis, pk=analysis_pk, user=request.user)
 
         # Render HTML template
@@ -295,19 +304,23 @@ def export_analysis_pdf(request, analysis_pk):
             'analysis': analysis,
         })
 
-        # Convert to PDF using WeasyPrint
-        html = HTML(string=html_string)
-        pdf = html.write_pdf()
+        # Convert to PDF using xhtml2pdf
+        pdf_file = BytesIO()
+        pisa.CreatePDF(html_string, pdf_file)
+        pdf_bytes = pdf_file.getvalue()
 
-        # Create HTTP response
-        response = HttpResponse(pdf, content_type='application/pdf')
-        filename = f"IntegriPic_Analysis_{analysis.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        if pdf_bytes:
+            # Create HTTP response
+            response = HttpResponse(pdf_bytes, content_type='application/pdf')
+            filename = f"IntegriPic_Analysis_{analysis.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
-        logger.info(f"User {request.user.username} exported PDF for analysis {analysis.id}")
-        messages.success(request, f"Report exported successfully: {filename}")
+            logger.info(f"User {request.user.username} exported PDF for analysis {analysis.id}")
+            messages.success(request, f"Report exported successfully: {filename}")
 
-        return response
+            return response
+        else:
+            raise Exception("PDF generation returned empty")
 
     except Exception as e:
         logger.error(f"Error exporting PDF for analysis {analysis_pk}: {str(e)}")
@@ -318,11 +331,12 @@ def export_analysis_pdf(request, analysis_pk):
 @login_required
 def export_comparison_pdf(request, comparison_pk):
     """Export comparison report as PDF"""
-    if not WEASYPRINT_AVAILABLE:
-        messages.error(request, "PDF export is not available. Please install WeasyPrint dependencies.")
+    if not PDF_AVAILABLE:
+        messages.error(request, "PDF export is not available. Downloading as HTML instead.")
         return redirect('analysis:comparison_detail', pk=comparison_pk)
 
     try:
+        from io import BytesIO
         comparison = get_object_or_404(ImageComparison, pk=comparison_pk, user=request.user)
 
         # Create context for PDF template
@@ -330,24 +344,108 @@ def export_comparison_pdf(request, comparison_pk):
             'comparison': comparison,
         }
 
-        # Render HTML template (we'll create this next)
+        # Render HTML template
         html_string = render_to_string('reports/comparison_report_pdf.html', context)
 
-        # Convert to PDF using WeasyPrint
-        html = HTML(string=html_string)
-        pdf = html.write_pdf()
+        # Convert to PDF using xhtml2pdf
+        pdf_file = BytesIO()
+        pisa.CreatePDF(html_string, pdf_file)
+        pdf_bytes = pdf_file.getvalue()
 
-        # Create HTTP response
-        response = HttpResponse(pdf, content_type='application/pdf')
-        filename = f"IntegriPic_Comparison_{comparison.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        if pdf_bytes:
+            # Create HTTP response
+            response = HttpResponse(pdf_bytes, content_type='application/pdf')
+            filename = f"IntegriPic_Comparison_{comparison.id}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
 
-        logger.info(f"User {request.user.username} exported PDF for comparison {comparison.id}")
-        messages.success(request, f"Report exported successfully: {filename}")
+            logger.info(f"User {request.user.username} exported PDF for comparison {comparison.id}")
+            messages.success(request, f"Report exported successfully: {filename}")
 
-        return response
+            return response
+        else:
+            raise Exception("PDF generation returned empty")
 
     except Exception as e:
         logger.error(f"Error exporting PDF for comparison {comparison_pk}: {str(e)}")
         messages.error(request, f"Error exporting PDF: {str(e)}")
         return redirect('analysis:comparison_detail', pk=comparison_pk)
+
+
+@login_required
+def export_analysis_json(request, analysis_pk):
+    """Export analysis data as JSON"""
+    import json
+    analysis = get_object_or_404(ImageAnalysis, pk=analysis_pk, user=request.user)
+
+    data = {
+        'id': analysis.pk,
+        'filename': analysis.original_filename,
+        'sha256_hash': analysis.sha256_hash,
+        'status': analysis.status,
+        'image_format': analysis.image_format,
+        'image_width': analysis.image_width,
+        'image_height': analysis.image_height,
+        'file_size': analysis.file_size,
+        'file_size_mb': analysis.file_size_mb,
+        'created_at': analysis.created_at.isoformat(),
+        'analysis_duration': analysis.analysis_duration,
+        'ela_analysis_performed': analysis.ela_analysis_performed,
+        'ela_results': analysis.ela_results,
+        'steganography_result': analysis.steganography_result,
+        'steganography_message': analysis.steganography_message,
+        'copy_move_result': analysis.copy_move_result,
+        'deepfake_probability': analysis.deepfake_probability,
+        'deepfake_notes': analysis.deepfake_notes,
+        'timeline_flags': analysis.timeline_flags,
+        'metadata': analysis.metadata,
+        'phash': analysis.phash,
+        'dhash': analysis.dhash,
+        'ahash': analysis.ahash,
+    }
+    response = HttpResponse(json.dumps(data, indent=2), content_type='application/json')
+    filename = f"IntegriPic_Analysis_{analysis.pk}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.json"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    logger.info(f"User {request.user.username} exported JSON for analysis {analysis.pk}")
+    return response
+
+
+@login_required
+def export_analysis_csv(request, analysis_pk):
+    """Export flat analysis summary as CSV"""
+    import csv
+    from io import StringIO
+    analysis = get_object_or_404(ImageAnalysis, pk=analysis_pk, user=request.user)
+
+    buf = StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(['Field', 'Value'])
+    rows = [
+        ('ID', analysis.pk),
+        ('Filename', analysis.original_filename),
+        ('SHA256', analysis.sha256_hash),
+        ('Status', analysis.status),
+        ('Format', analysis.image_format),
+        ('Width', analysis.image_width),
+        ('Height', analysis.image_height),
+        ('File Size (bytes)', analysis.file_size),
+        ('File Size (MB)', f"{analysis.file_size_mb:.2f}"),
+        ('Created', analysis.created_at.isoformat()),
+        ('Duration (seconds)', analysis.analysis_duration),
+        ('ELA Performed', analysis.ela_analysis_performed),
+        ('ELA Max Diff', analysis.ela_results.get('max_difference') if analysis.ela_results else ''),
+        ('ELA Avg Diff', analysis.ela_results.get('avg_difference') if analysis.ela_results else ''),
+        ('ELA Significant Pixels %', analysis.ela_results.get('significant_pixels_percentage') if analysis.ela_results else ''),
+        ('Steganography Result', analysis.steganography_result or ''),
+        ('Deepfake Probability', analysis.deepfake_probability or ''),
+        ('pHash', analysis.phash or ''),
+        ('dHash', analysis.dhash or ''),
+        ('aHash', analysis.ahash or ''),
+        ('Copy-Move Matches', analysis.copy_move_result.get('match_count') if analysis.copy_move_result else 0),
+        ('Timeline Flags Count', len(analysis.timeline_flags) if analysis.timeline_flags else 0),
+    ]
+    writer.writerows(rows)
+    response = HttpResponse(buf.getvalue(), content_type='text/csv')
+    filename = f"IntegriPic_Analysis_{analysis.pk}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    logger.info(f"User {request.user.username} exported CSV for analysis {analysis.pk}")
+    return response

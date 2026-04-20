@@ -57,14 +57,19 @@ class ImageComparisonService:
                 img2_properties = ImageComparisonService._extract_enhanced_image_properties(image2_path)
                 
                 # Save difference image to memory
-                with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as diff_temp:
-                    diff.save(diff_temp.name, 'PNG')
+                diff_temp = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
+                diff_temp_path = diff_temp.name
+                diff_temp.close()  # Close the file handle early to prevent Windows WinError 32
+                
+                try:
+                    diff.save(diff_temp_path, 'PNG')
                     
                     # Read the file content and create Django file
-                    with open(diff_temp.name, 'rb') as f:
+                    with open(diff_temp_path, 'rb') as f:
                         diff_content = f.read()
-                    
-                    os.unlink(diff_temp.name)  # Clean up temp file
+                finally:
+                    if os.path.exists(diff_temp_path):
+                        os.unlink(diff_temp_path)  # Clean up temp file
                     
                     return {
                         'difference_image': ContentFile(diff_content, name=f'diff_{int(time.time())}.png'),

@@ -1,286 +1,270 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+<html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}IntegriPic{% endblock %}</title>
-    <!-- Bootstrap 5.3 CSS -->
+    <title>{% block title %}IntegriPic Engine{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
+    <script>
+        // Init theme early to prevent flash
+        const savedTheme = localStorage.getItem('integripic-theme') || 'dark';
+        document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        // Ensure sidebar state
+        if (localStorage.getItem('integripic-sidebar') === 'collapsed') {
+            document.documentElement.classList.add('sidebar-minimized');
+        }
+    </script>
+
     <style>
         :root {
             --sidebar-width: 260px;
-            --primary-blue: #3b82f6;
-            --primary-blue-hover: #2563eb;
+            --primary: #8b5cf6;
+            --primary-glow: rgba(139, 92, 246, 0.4);
+            --secondary: #3b82f6;
+            --accent-orange: #f59e0b;
         }
 
-        /* Animated Background */
+        [data-bs-theme="dark"] {
+            --bg-deep: #0b0f1a;
+            --bg-surface: #121826;
+            --bg-surface-hover: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(18, 24, 38, 0.7);
+        }
+
+        [data-bs-theme="light"] {
+            --bg-deep: #f8fafc;
+            --bg-surface: #ffffff;
+            --bg-surface-hover: #f1f5f9;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+        }
+
+        html, body { min-height: 100vh; }
         body {
-            background: linear-gradient(-45deg, #f8fafc, #e2e8f0, #cbd5e1, #bae6fd);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            overflow-x: hidden;
-            margin: 0;
-            transition: background 0.5s ease;
-        }
-        
-        [data-bs-theme="dark"] body {
-            background: linear-gradient(-45deg, #0f172a, #1e293b, #0c1222, #1e3a8a);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            display: flex; margin: 0; overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            background-image: 
+                radial-gradient(ellipse at top left, rgba(139, 92, 246, 0.08), transparent 40%),
+                radial-gradient(ellipse at bottom right, rgba(59, 130, 246, 0.05), transparent 40%);
+            background-attachment: fixed;
+            transition: background-color 0.3s, color 0.3s;
         }
 
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* -------------------------- */
-        /* AUTH LAYOUT (Centered)     */
-        /* -------------------------- */
-        body.auth-layout {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        body.auth-layout::before {
-            content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
-            background: radial-gradient(circle at center, rgba(59,130,246,0.15), transparent 70%);
-            animation: pulse 4s infinite alternate; pointer-events: none; z-index: 0;
-        }
-        @keyframes pulse {
-            0% { opacity: 0.5; transform: scale(0.95); }
-            100% { opacity: 1; transform: scale(1.05); }
-        }
-
-        /* -------------------------- */
-        /* SIDEBAR (Dark - Always)    */
-        /* -------------------------- */
         .sidebar {
             width: var(--sidebar-width);
-            background-color: #0c1220; /* Always dark */
-            color: #f8fafc;
-            position: fixed;
-            top: 0; left: 0; height: 100vh;
-            display: flex; flex-direction: column;
-            z-index: 1000;
-            border-right: 1px solid rgba(255,255,255,0.05);
-            transition: transform 0.3s ease;
+            background: var(--bg-surface);
+            position: fixed; top: 0; left: 0; height: 100vh;
+            display: flex; flex-direction: column; z-index: 1000;
+            border-right: 1px solid var(--border-color);
+            padding: 1.5rem 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .sidebar-brand {
-            padding: 2.5rem 1.5rem 2rem;
-            display: flex; align-items: center; gap: 1rem;
-            text-decoration: none; color: white;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex; align-items: center; gap: 0.75rem;
+            text-decoration: none; color: var(--text-main);
+            padding: 0.5rem 0.5rem 2rem;
+            overflow: hidden; white-space: nowrap;
         }
         .sidebar-brand-icon {
-            font-size: 2rem; color: var(--primary-blue);
+            width: 32px; height: 32px; border-radius: 8px; min-width: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 15px var(--primary-glow);
+            font-size: 1.2rem; color: white;
         }
-        .sidebar-brand-text {
-            font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px;
-        }
+        .sidebar-brand-text { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.5px; transition: opacity 0.2s; }
 
-        .nav-menu {
-            padding: 1.5rem 1rem;
-            flex-grow: 1;
-            overflow-y: auto;
-            display: flex; flex-direction: column; gap: 0.25rem;
-        }
+        .nav-menu { flex-grow: 1; display: flex; flex-direction: column; gap: 0.35rem; overflow-y: auto; overflow-x: hidden; }
+        .nav-label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin: 1.25rem 0.5rem 0.5rem; transition: opacity 0.2s; white-space: nowrap; }
 
-        .nav-link {
-            display: flex; align-items: center; gap: 1rem;
-            padding: 0.9rem 1.25rem;
-            color: #94a3b8;
-            text-decoration: none;
-            border-radius: 10px;
-            font-weight: 500; font-size: 1.05rem;
-            transition: all 0.2s;
+        .sidebar .nav-link {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.5rem 0.75rem; color: var(--text-muted);
+            text-decoration: none; border-radius: 6px;
+            font-weight: 500; font-size: 0.95rem; white-space: nowrap;
+            transition: all 0.2s ease; position: relative;
         }
-        .nav-link i { font-size: 1.4rem; transition: transform 0.2s; }
-        .nav-link:hover { color: white; background: rgba(255,255,255,0.05); }
-        .nav-link.active {
-            color: white;
-            background: var(--primary-blue);
-            box-shadow: 0 4px 12px rgba(59,130,246,0.3);
-            font-weight: 600;
-        }
+        .sidebar .nav-link i { font-size: 1.1rem; color: #64748b; transition: color 0.2s; min-width: 20px; text-align: center; }
+        .sidebar .nav-link:hover { color: var(--text-main); background: var(--bg-surface-hover); }
+        .sidebar .nav-link:hover i { color: var(--text-main); }
         
-        .sidebar-footer {
-            padding: 1.5rem;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            display: flex; flex-direction: column; gap: 1rem;
+        .sidebar .nav-link.active {
+            color: var(--text-main); background: rgba(139, 92, 246, 0.08);
+            box-shadow: inset 3px 0 0 var(--primary), 0 0 10px rgba(139, 92, 246, 0.05);
         }
-
-        /* -------------------------- */
-        /* MAIN CONTENT               */
-        /* -------------------------- */
-        .main-wrapper {
-            flex-grow: 1;
-            margin-left: var(--sidebar-width);
-            display: flex; flex-direction: column;
-            min-height: 100vh;
-        }
-        .main-content {
-            padding: 3rem;
-            flex-grow: 1;
-            max-width: 1400px;
-            margin: 0 auto; width: 100%;
-        }
-
-        /* -------------------------- */
-        /* GLOBAL COMPONENT STYLING   */
-        /* -------------------------- */
-        /* By default cards are opaque white, but in dark mode they switch to Bootstrap dark */
-        .card { 
-            border: none;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            transition: background-color 0.3s, color 0.3s, box-shadow 0.3s;
-        }
-        /* Glass effect so animated background shows through slightly */
-        [data-bs-theme="light"] .card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-        }
-        [data-bs-theme="dark"] .card {
-            background: rgba(30, 41, 59, 0.85); /* Slate 800 */
-            backdrop-filter: blur(16px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .btn-primary {
-            background-color: var(--primary-blue) !important;
-            border-color: var(--primary-blue) !important;
-            color: white !important;
-        }
-        .btn-primary:hover {
-            background-color: var(--primary-blue-hover) !important;
-            transform: translateY(-2px);
-            transition: all 0.2s;
-        }
+        .sidebar .nav-link.active i { color: var(--primary); }
+        .sidebar .nav-link span { transition: opacity 0.2s; }
         
-        /* Accents */
-        .stat-icon {
-            display: inline-flex; align-items: center; justify-content: center;
-            border-radius: 12px; width: 54px; height: 54px; font-size: 1.75rem;
-            color: white;
+        .sidebar-footer { margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color); overflow: hidden; }
+        
+        .user-profile-btn {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.75rem; border-radius: 8px; white-space: nowrap;
+            background: rgba(139, 92, 246, 0.03); border: 1px solid var(--border-color);
+            transition: all 0.2s; text-decoration: none; color: inherit;
         }
-        .stat-icon.blue { background: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
-        .stat-icon.green { background: #10b981; box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
-        .stat-icon.yellow { background: #f59e0b; box-shadow: 0 4px 12px rgba(245,158,11,0.3); }
-        .stat-icon.purple { background: #8b5cf6; box-shadow: 0 4px 12px rgba(139,92,246,0.3); }
+        .user-profile-btn:hover { background: var(--bg-surface-hover); }
+        
+        .theme-toggle-btn { background: transparent; border: none; padding: 0.5rem; border-radius: 6px; }
+        .theme-toggle-btn:hover { background: rgba(0,0,0,0.05); }
 
-        /* General fixes for dark mode */
-        th, td { border-color: inherit; }
-        [data-bs-theme="dark"] .table { color: inherit; }
-        [data-bs-theme="dark"] .text-muted { color: #94a3b8 !important; }
+        /* Icon-Only Modifiers */
+        html.sidebar-minimized .sidebar { width: 80px; padding: 1.5rem 0.5rem; align-items: center; }
+        html.sidebar-minimized .sidebar-brand { justify-content: center; padding-left: 0; padding-right: 0; }
+        html.sidebar-minimized .sidebar-brand-text, 
+        html.sidebar-minimized .nav-label, 
+        html.sidebar-minimized .nav-link span,
+        html.sidebar-minimized .user-name-text,
+        html.sidebar-minimized .theme-toggle-text { opacity: 0; display: none !important; }
+        
+        html.sidebar-minimized .sidebar .nav-link { justify-content: center; padding: 0.75rem; width: 44px; height: 44px; margin: 0 auto; }
+        html.sidebar-minimized .sidebar .nav-link i { margin: 0; font-size: 1.25rem; text-align: center; }
+        html.sidebar-minimized .user-profile-btn { padding: 0.5rem; justify-content: center; width: 44px; border: none; background: transparent; }
+        html.sidebar-minimized .logout-form-btn { display: none !important; }
+        html.sidebar-minimized .main-wrapper { margin-left: 80px; }
+        html.sidebar-minimized #themeToggleBtn { justify-content: center; width: 44px !important; margin: 0 auto; }
 
-        /* Mobile */
-        .mobile-toggler { display: none; position: fixed; top: 1rem; left: 1rem; z-index: 1050; background: #0f172a; border: none; border-radius: 8px; padding: 0.5rem 0.75rem; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.3);}
+        .main-wrapper { flex-grow: 1; margin-left: var(--sidebar-width); display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .main-content { padding: 1.5rem 3rem; flex-grow: 1; max-width: 1500px; margin: 0 auto; width: 100%; transition: padding 0.3s; }
+
         @media (max-width: 991px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.show { transform: translateX(0); }
-            .main-wrapper { margin-left: 0; }
-            .main-content { padding: 4.5rem 1.5rem; }
-            .mobile-toggler { display: block; }
+            html.sidebar-minimized .sidebar { transform: translateX(-100%); }
+            .main-wrapper, html.sidebar-minimized .main-wrapper { margin-left: 0; }
+            .main-content { padding: 2rem 1.5rem; }
+        }
+
+        .card { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); color: var(--text-main); transition: background-color 0.3s, border-color 0.3s, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s; }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); border-color: rgba(139, 92, 246, 0.3); }
+        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(12px); border: 1px solid var(--border-color); border-radius: 16px; transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        .btn-primary { background: linear-gradient(135deg, var(--primary), #7c3aed) !important; border: none !important; color: white !important; font-weight: 500; border-radius: 8px; box-shadow: 0 4px 15px var(--primary-glow); transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s; }
+        .btn-primary:hover { transform: scale(1.04); box-shadow: 0 8px 25px rgba(139, 92, 246, 0.7); }
+        .btn-primary:active { transform: scale(0.97) !important; box-shadow: 0 2px 10px var(--primary-glow); }
+
+        .btn-secondary { background: transparent !important; border: 1px solid var(--border-color) !important; color: var(--text-main) !important; font-weight: 500; border-radius: 8px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-secondary:hover { transform: scale(1.04); background: var(--bg-surface-hover) !important; box-shadow: 0 6px 15px rgba(0,0,0,0.05); }
+        .btn-secondary:active { transform: scale(0.97) !important; }
+
+        /* Premium Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
-        /* Theme Toggle Button */
-        .theme-toggle {
-            background: transparent; border: 1px solid rgba(255,255,255,0.1);
-            color: #94a3b8; padding: 0.6rem; border-radius: 8px;
-            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-            cursor: pointer; width: 100%; transition: all 0.2s; font-weight: 500;
-        }
-        .theme-toggle:hover {
-            background: rgba(255,255,255,0.05); color: white;
-        }
+        .fade-up-stagger { opacity: 0; animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+
+        /* App Header Controls */
+        .app-header-controls { display: flex; align-items: flex-start; margin-bottom: 2rem; }
+        .sidebar-toggle-btn { background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sidebar-toggle-btn:hover { background: var(--bg-surface-hover); color: var(--text-main); transform: scale(1.05); }
+
+        body.auth-layout { align-items: center; justify-content: center; background: var(--bg-deep); }
     </style>
-    
-    <!-- Initial Theme Script to prevent flash -->
-    <script>
-        const storedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        document.documentElement.setAttribute('data-bs-theme', storedTheme);
-    </script>
-    
     {% block extra_css %}{% endblock %}
 </head>
 <body class="{% if not user.is_authenticated %}auth-layout{% endif %}">
 
     {% if user.is_authenticated %}
-    <button class="mobile-toggler d-lg-none" id="sidebarToggle">
-        <i class="bi bi-list fs-3"></i>
-    </button>
-
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="appSidebar">
         <a href="{% url 'analysis:dashboard' %}" class="sidebar-brand">
-            <i class="bi bi-hexagon-fill sidebar-brand-icon"></i>
+            <div class="sidebar-brand-icon"><i class="bi bi-hexagon-fill"></i></div>
             <span class="sidebar-brand-text">IntegriPic</span>
         </a>
 
         <nav class="nav-menu">
-            <div class="text-uppercase fw-bold mb-2 px-3 mt-2" style="font-size: 0.75rem; color: #64748b; letter-spacing: 1px;">Core System</div>
-            <a href="{% url 'analysis:dashboard' %}" class="nav-link"><i class="bi bi-grid-1x2"></i> <span>Dashboard</span></a>
-            <a href="{% url 'analysis:upload' %}" class="nav-link"><i class="bi bi-cloud-arrow-up"></i> <span>Upload Matrix</span></a>
-            <a href="{% url 'analysis:compare' %}" class="nav-link"><i class="bi bi-intersect"></i> <span>Comparison Analysis</span></a>
+            <div class="nav-label">Core System</div>
+            <a href="{% url 'analysis:dashboard' %}" class="nav-link" title="Dashboard"><i class="bi bi-grid-1x2"></i> <span>Dashboard</span></a>
+            <a href="{% url 'analysis:upload' %}" class="nav-link" title="Upload Matrix"><i class="bi bi-cloud-arrow-up"></i> <span>Upload Asset</span></a>
+            <a href="{% url 'analysis:compare' %}" class="nav-link" title="Compare Assets"><i class="bi bi-intersect"></i> <span>Compare Analysis</span></a>
             
-            <div class="text-uppercase fw-bold mb-2 mt-4 px-3" style="font-size: 0.75rem; color: #64748b; letter-spacing: 1px;">Data Forensics</div>
-            <a href="{% url 'analysis:image_list' %}" class="nav-link"><i class="bi bi-images"></i> <span>Asset Gallery</span></a>
-            <a href="{% url 'analysis:analysis_list' %}" class="nav-link"><i class="bi bi-search"></i> <span>Analysis Hub</span></a>
-            <a href="{% url 'reports:user_reports' %}" class="nav-link"><i class="bi bi-file-earmark-text"></i> <span>Platform Reports</span></a>
-            {% if user.is_staff %}
-            <a href="{% url 'reports:admin_reports' %}" class="nav-link"><i class="bi bi-shield-lock"></i> <span>Admin Config</span></a>
-            {% endif %}
+            <div class="nav-label">Data Forensics</div>
+            <a href="{% url 'analysis:image_list' %}" class="nav-link" title="Asset Gallery"><i class="bi bi-images"></i> <span>Asset Gallery</span></a>
+            <a href="{% url 'analysis:analysis_list' %}" class="nav-link" title="Analysis Hub"><i class="bi bi-search"></i> <span>Analysis Hub</span></a>
+            <a href="{% url 'analysis:network_graph' %}" class="nav-link" title="Link Analysis Graph"><i class="bi bi-diagram-3"></i> <span>Network Graph</span></a>
+            <a href="{% url 'reports:user_reports' %}" class="nav-link" title="Platform Reports"><i class="bi bi-file-earmark-text"></i> <span>Reports</span></a>
         </nav>
 
-        <div class="sidebar-footer">
-            <button class="theme-toggle" id="themeToggleBtn">
-                <i class="bi bi-moon-stars" id="themeIcon"></i> <span id="themeText">Dark Mode</span>
-            </button>
-            <div class="d-flex align-items-center justify-content-between p-2 rounded" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.02);">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 35px; height: 35px;">
-                        {{ user.username|first|upper }}
+        <div class="sidebar-footer px-2 pb-2" style="overflow: visible;">
+            <!-- Dropdown Toggle -->
+            <div class="dropdown w-100">
+                <button class="user-profile-btn border-0 shadow-sm w-100 bg-transparent text-start dropdown-toggle pb-2" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="padding: 0.5rem; transition: background 0.2s; border-radius: 8px;">
+                    <div class="d-flex align-items-center gap-2 w-100">
+                        <div class="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0 avatar shadow-sm" style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary), var(--secondary)); font-size: 0.9rem;">
+                            {{ user.username|first|upper }}
+                        </div>
+                        <div class="d-flex flex-column flex-grow-1 user-name-text overflow-hidden pe-2">
+                            <span class="fw-semibold text-truncate text-main" style="font-size: 0.9rem; line-height: 1.2;">{{ user.username }}</span>
+                            <span style="font-size: 0.72rem; color: var(--text-muted);">View Options</span>
+                        </div>
                     </div>
-                    <div>
-                        <div class="fw-bold text-white small" style="line-height: 1.1;">{{ user.username }}</div>
-                        <a href="{% url 'accounts:profile' %}" class="text-decoration-none small" style="color: var(--primary-blue);">View Profile</a>
-                    </div>
-                </div>
-                <a href="{% url 'accounts:logout' %}" class="btn btn-sm text-danger border-0 p-1"><i class="bi bi-power fs-5"></i></a>
+                </button>
+                <ul class="dropdown-menu shadow-lg border-0 py-2" aria-labelledby="profileDropdown" style="background: var(--bg-surface); min-width: 220px; border-radius: 12px; margin-bottom: 0.5rem; border: 1px solid var(--border-color) !important;">
+                    <li><h6 class="dropdown-header text-muted text-uppercase" style="letter-spacing: 1px; font-size: 0.7rem;">Account System</h6></li>
+                    <li><a class="dropdown-item d-flex align-items-center py-2 text-main" href="{% url 'accounts:profile' %}"><i class="bi bi-person-gear me-3 text-secondary"></i> Identity Config</a></li>
+                    <li><hr class="dropdown-divider" style="border-color: var(--border-color);"></li>
+                    <li>
+                        <button class="dropdown-item d-flex align-items-center py-2 text-main" id="themeToggleBtnDropdown" style="background: transparent;">
+                            <i class="bi bi-moon-stars me-3 text-warning theme-icon"></i> <span class="theme-toggle-text">Toggle Theme</span>
+                        </button>
+                    </li>
+                    <li><hr class="dropdown-divider" style="border-color: var(--border-color);"></li>
+                    <li>
+                        <form action="{% url 'accounts:logout' %}" method="post" class="m-0 p-0 w-100">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item d-flex align-items-center py-2 text-danger fw-medium" style="background: transparent;"><i class="bi bi-box-arrow-right me-3"></i> Disconnect Node</button>
+                        </form>
+                    </li>
+                </ul>
             </div>
         </div>
     </aside>
 
     <main class="main-wrapper">
         <div class="main-content">
+            <div class="app-header-controls">
+                <button class="sidebar-toggle-btn shadow-sm" id="sidebarToggle" title="Toggle Sidebar">
+                    <i class="bi bi-layout-sidebar"></i>
+                </button>
+                <div class="flex-grow-1 px-4">
+                    {% block page_header %}{% endblock %}
+                </div>
+            </div>
+            
             {% if messages %}
             <div class="mb-4">
                 {% for message in messages %}
-                <div class="alert card border-0 border-start border-4 border-{{ message.tags|default:'primary' }} alert-dismissible fade show d-flex align-items-center gap-3 py-3 shadow-sm" role="alert">
-                    {% if message.tags == 'success' %}<i class="bi bi-check-circle-fill text-success fs-4"></i>{% else %}<i class="bi bi-info-circle-fill text-primary fs-4"></i>{% endif %}
-                    <div class="fw-medium text-body">{{ message }}</div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <div class="alert glass-panel d-flex align-items-center gap-3 py-3 shadow-sm border-0 fade show" role="alert" style="border-left: 4px solid var(--primary) !important;">
+                    <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill text-success{% else %}bi-info-circle-fill text-primary{% endif %} fs-5"></i>
+                    <div class="fw-medium text-main">{{ message }}</div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
                 </div>
                 {% endfor %}
             </div>
             {% endif %}
     {% else %}
-    <!-- Auth Only Content -->
-    <div class="w-100 px-3 position-relative z-index-1" style="max-width: 480px;">
+    <div class="w-100 px-3 position-relative z-index-1" style="max-width: 420px;">
         {% if messages %}
             {% for message in messages %}
-            <div class="alert card border-0 border-start border-4 border-{{ message.tags|default:'primary' }} alert-dismissible fade show mb-4 shadow-sm" role="alert">
-                <div class="fw-medium text-body">{{ message }}</div>
+            <div class="alert glass-panel border-start border-4 border-{{ message.tags|default:'primary' }} alert-dismissible fade show mb-4 text-white" role="alert">
+                <div class="fw-medium text-main">{{ message }}</div>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
             {% endfor %}
@@ -296,75 +280,180 @@
     </div>
     {% endif %}
 
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Sidebar active logic
+            // Active Nav Logic
             const path = window.location.pathname;
             document.querySelectorAll('.nav-link').forEach(link => {
                 const href = link.getAttribute('href');
-                if (href !== '/' && path.includes(href)) {
-                    link.classList.add('active');
-                } else if (href === '/' && path === '/') {
+                if (href === '/') {
+                    if (path === '/') link.classList.add('active');
+                } else if (path.startsWith(href)) {
                     link.classList.add('active');
                 }
             });
 
-            // Mobile toggle
-            const toggle = document.getElementById('sidebarToggle');
-            if(toggle) {
-                toggle.addEventListener('click', () => {
-                    document.getElementById('sidebar').classList.toggle('show');
+            // Sidebar Toggle Logic
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', () => {
+                    document.documentElement.classList.toggle('sidebar-minimized');
+                    localStorage.setItem('integripic-sidebar', document.documentElement.classList.contains('sidebar-minimized') ? 'collapsed' : 'expanded');
                 });
             }
 
-            // Theme toggle logic
-            const themeToggleBtn = document.getElementById('themeToggleBtn');
-            const themeIcon = document.getElementById('themeIcon');
-            const themeText = document.getElementById('themeText');
+            // Theme Toggle Logic
+            const themeToggleBtns = document.querySelectorAll('#themeToggleBtn, #themeToggleBtnDropdown');
+            const themeIcons = document.querySelectorAll('.theme-icon');
             
-            if(themeToggleBtn) {
-                const updateThemeUI = (theme) => {
-                    if(theme === 'dark') {
-                        themeIcon.className = 'bi bi-sun-fill';
-                        themeText.textContent = 'Light Mode';
-                    } else {
-                        themeIcon.className = 'bi bi-moon-stars-fill';
-                        themeText.textContent = 'Dark Mode';
-                    }
-                };
+            function updateThemeIcon(theme) {
+                themeIcons.forEach(icon => {
+                    icon.className = theme === 'dark' ? 'bi bi-moon-stars me-3 text-warning theme-icon' : 'bi bi-sun me-3 text-warning theme-icon';
+                });
+            }
+            
+            updateThemeIcon(document.documentElement.getAttribute('data-bs-theme'));
 
-                updateThemeUI(document.documentElement.getAttribute('data-bs-theme'));
-
-                themeToggleBtn.addEventListener('click', () => {
-                    const currentTheme = document.documentElement.getAttribute('data-bs-theme');
-                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                    
+            themeToggleBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const current = document.documentElement.getAttribute('data-bs-theme');
+                    const newTheme = current === 'dark' ? 'light' : 'dark';
                     document.documentElement.setAttribute('data-bs-theme', newTheme);
-                    localStorage.setItem('theme', newTheme);
-                    updateThemeUI(newTheme);
+                    localStorage.setItem('integripic-theme', newTheme);
+                    updateThemeIcon(newTheme);
+                });
+            });
+        });
+        
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/auth-service-worker.js').catch(function(error) {
+                    console.log('Service Worker registration failed:', error);
+                });
+            });
+        }
+    </script>
+    <!-- Global Floating Chat Widget -->
+    <div id="ai-bot-container" class="position-fixed" style="bottom: 2rem; right: 2rem; z-index: 1050; display: flex; flex-direction: column; align-items: flex-end;">
+        <!-- The Chat Window -->
+        <div id="ai-bot-window" class="shadow-lg mb-3" style="width: 350px; border-radius: 16px; overflow: hidden; border: 1px solid var(--border-color); background: var(--bg-surface); display: none; flex-direction: column; opacity: 0; transition: opacity 0.3s ease;">
+            <div id="ai-bot-header" class="p-3 d-flex justify-content-between align-items-center text-white" style="background: linear-gradient(135deg, var(--primary), var(--secondary));">
+                <div class="fw-bold"><i class="bi bi-cpu me-2"></i> ForenSys Engine</div>
+                <button id="ai-bot-close" class="btn btn-sm text-white p-0 border-0"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div id="ai-bot-body" style="height: 320px; display: flex; flex-direction: column;">
+                <div id="ai-bot-messages" class="flex-grow-1 p-3" style="overflow-y: auto; background: var(--bg-deep); display: flex; flex-direction: column; gap: 10px;">
+                    <div class="p-2 rounded" style="background: rgba(139, 92, 246, 0.1); border-left: 3px solid var(--primary); font-size: 0.85rem;">
+                        Hi! I'm ForenSys, your local offline analytical engine. Ask me anything about the data!
+                    </div>
+                </div>
+                <div class="p-3 pt-2" style="border-top: 1px solid var(--border-color); background: var(--bg-surface);">
+                    <form id="ai-bot-form" class="d-flex gap-2 m-0">
+                        <input type="text" id="ai-bot-input" class="form-control form-control-sm border-0 px-3" placeholder="Query data..." style="background: var(--bg-deep); color: var(--text-main); border-radius: 20px;">
+                        <button type="submit" class="btn btn-primary btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; min-width: 32px;"><i class="bi bi-send-fill" style="font-size: 0.8rem;"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Floating Action Button -->
+        <button id="ai-bot-fab" class="btn btn-primary rounded-circle shadow-lg d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <i class="bi bi-robot fs-3 text-white"></i>
+        </button>
+    </div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const botWindow = document.getElementById('ai-bot-window');
+            const botFab = document.getElementById('ai-bot-fab');
+            const botClose = document.getElementById('ai-bot-close');
+            const botInput = document.getElementById('ai-bot-input');
+            const botMessages = document.getElementById('ai-bot-messages');
+            
+            let botOpen = window.location.pathname.includes('/analyses/');
+            
+            function updateBotState() {
+                if (botOpen) {
+                    botWindow.style.display = 'flex';
+                    setTimeout(() => botWindow.style.opacity = '1', 10);
+                    botFab.style.transform = 'scale(0)';
+                } else {
+                    botWindow.style.opacity = '0';
+                    setTimeout(() => botWindow.style.display = 'none', 300);
+                    botFab.style.transform = 'scale(1)';
+                }
+            }
+            updateBotState();
+
+            botFab.addEventListener('click', () => {
+                botOpen = true;
+                updateBotState();
+            });
+
+            botClose.addEventListener('click', () => {
+                botOpen = false;
+                updateBotState();
+            });
+
+            const botForm = document.getElementById('ai-bot-form');
+            
+            {% if analysis and analysis.pk %}
+            const currentAnalysisId = "{{ analysis.pk }}";
+            {% else %}
+            const currentAnalysisId = null;
+            {% endif %}
+
+            if (botForm) {
+                botForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const text = botInput.value.trim();
+                    if(!text) return;
+                    
+                    botInput.value = '';
+                    
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'p-2 rounded align-self-end text-white';
+                    userDiv.style = 'background: var(--secondary); max-width: 80%; font-size: 0.85rem;';
+                    userDiv.textContent = text;
+                    botMessages.appendChild(userDiv);
+                    botMessages.scrollTop = botMessages.scrollHeight;
+                    
+                    const history = Array.from(botMessages.querySelectorAll('div')).map(div => div.textContent);
+                    
+                    try {
+                        const resp = await fetch("{% url 'analysis:bot_ask_global' %}", {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                query: text, 
+                                history: history,
+                                analysis_id: currentAnalysisId
+                            })
+                        });
+                        const data = await resp.json();
+                        
+                        const botDiv = document.createElement('div');
+                        botDiv.className = 'p-2 rounded align-self-start';
+                        botDiv.style = 'background: rgba(139, 92, 246, 0.1); border-left: 3px solid var(--primary); max-width: 80%; font-size: 0.85rem;';
+                        botDiv.innerHTML = data.reply || 'No response.'; 
+                        botMessages.appendChild(botDiv);
+                        
+                    } catch (err) {
+                        const botDiv = document.createElement('div');
+                        botDiv.className = 'p-2 rounded align-self-start text-danger';
+                        botDiv.style = 'background: rgba(239, 68, 68, 0.1); border-left: 3px solid #ef4444; max-width: 80%; font-size: 0.85rem;';
+                        botDiv.textContent = 'Network error contacting ForenSys.';
+                        botMessages.appendChild(botDiv);
+                    }
+                    botMessages.scrollTop = botMessages.scrollHeight;
                 });
             }
         });
     </script>
-    
-    <!-- Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/auth-service-worker.js')
-                    .then(function(registration) {
-                        console.log('Service Worker registered successfully:', registration.scope);
-                    })
-                    .catch(function(error) {
-                        console.log('Service Worker registration failed:', error);
-                    });
-            });
-        }
-    </script>
-
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -1,114 +1,273 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
-{% block title %}Upload - IntegriPic{% endblock %}
+{% block title %}Upload Matrix - IntegriPic Engine{% endblock %}
+
+{% block page_header %}
+<div class="d-flex align-items-center gap-3 mb-4 pb-2 border-bottom" style="border-color: var(--border-color) !important;">
+    <button onclick="window.history.back()" class="btn btn-sm btn-secondary d-flex align-items-center gap-2 px-3 fw-medium" style="border: none !important; background: rgba(255,255,255,0.03) !important;">
+        <i class="bi bi-arrow-left text-muted"></i> Back
+    </button>
+    <div class="text-muted fw-medium" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+        Core Matrix <span class="mx-2 opacity-30">/</span> <span class="text-main">Asset Ingestion</span>
+    </div>
+</div>
+{% endblock %}
 
 {% block extra_css %}
 <style>
+    /* CSS for the interactive drag & drop zone */
+    .upload-container {
+        position: relative;
+        border-radius: 16px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 4px;
+        background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%);
+    }
+    
     .drag-drop-zone {
-        border: 2px dashed rgba(128,128,128,0.4);
+        border: 2px dashed rgba(255,255,255,0.1);
+        background: var(--glass-bg);
         border-radius: 12px;
-        background: rgba(128,128,128,0.05);
-        transition: all 0.3s ease;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         cursor: pointer;
         position: relative;
+        z-index: 5;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        min-height: 400px;
+        overflow: hidden;
     }
-    .drag-drop-zone:hover, .drag-drop-zone.dragover {
-        border-color: var(--primary-blue);
-        background: rgba(59, 130, 246, 0.05);
+    
+    /* Hover glow effect */
+    .drag-drop-zone::before {
+        content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
+        background: radial-gradient(circle at center, var(--primary-glow) 0%, transparent 70%);
+        opacity: 0; transition: opacity 0.4s ease; z-index: 0; pointer-events: none;
     }
+    
+    /* Interactive States */
+    .drag-drop-zone:hover {
+        border-color: rgba(139, 92, 246, 0.4);
+        background: rgba(18, 24, 38, 0.95);
+    }
+    .drag-drop-zone:hover::before { opacity: 0.3; }
+
+    .drag-drop-zone.dragover {
+        border-color: var(--primary);
+        border-style: solid;
+        transform: scale(1.02);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    .drag-drop-zone.dragover::before { opacity: 0.6; }
+
     .drag-icon-box {
-        width: 72px; height: 72px;
-        border-radius: 16px;
-        background: rgba(59, 130, 246, 0.1);
-        color: var(--primary-blue);
+        width: 80px; height: 80px;
+        border-radius: 20px;
+        background: rgba(255,255,255,0.03);
+        color: var(--text-muted);
         display: flex; align-items: center; justify-content: center;
-        font-size: 2.2rem; margin: 0 auto;
-        border: 1px solid rgba(59, 130, 246, 0.2);
+        font-size: 2.5rem; margin: 0 auto;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        position: relative; z-index: 2;
     }
+    .drag-drop-zone:hover .drag-icon-box {
+        transform: translateY(-5px);
+        background: rgba(139, 92, 246, 0.15);
+        color: var(--primary);
+        border-color: rgba(139, 92, 246, 0.3);
+    }
+    .drag-drop-zone.dragover .drag-icon-box {
+        transform: translateY(-10px) scale(1.1);
+        background: var(--primary); color: white;
+        box-shadow: 0 10px 30px var(--primary-glow);
+    }
+
     .hidden-input {
-        position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index: 5;
+        position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index: 10;
+    }
+    
+    /* Image Preview State */
+    .preview-container {
+        width: 100%; height: 100%;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        animation: fadeIn 0.4s ease forwards;
+        z-index: 20; position: relative;
     }
     .preview-image {
-        max-height: 250px; border-radius: 8px; border: 1px solid rgba(128,128,128,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        max-height: 220px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.1);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+        margin-bottom: 1.5rem;
+        object-fit: contain;
     }
+    
+    /* Right Side Chips */
+    .format-chip {
+        display: flex; align-items: center; gap: 0.75rem;
+        padding: 0.85rem 1rem;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        transition: all 0.2s;
+        margin-bottom: 0.75rem;
+    }
+    .format-chip:hover {
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(255,255,255,0.1);
+    }
+    
+    /* Premium Alert */
+    .premium-alert {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.8) 100%);
+        border: 1px solid var(--border-color);
+        border-left: 3px solid var(--secondary);
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-top: 2rem;
+    }
+
+    /* Processing Timeline */
+    .process-timeline {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-top: 2rem; position: relative; padding: 0 10px;
+    }
+    .process-timeline::before {
+        content: ''; position: absolute; top: 15px; left: 10%; width: 80%; height: 1px;
+        background: dashed 1px var(--border-color); z-index: 1; border-top: 1px dashed rgba(255,255,255,0.1);
+    }
+    .process-step {
+        display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+        position: relative; z-index: 2;
+    }
+    .process-dot {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: var(--bg-deep); border: 2px solid var(--border-color);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem; color: var(--text-muted);
+        transition: all 0.3s;
+    }
+    /* The active step gets a glow when file is selected */
+    .upload-ready .process-step:nth-child(2) .process-dot {
+        border-color: var(--primary); background: rgba(139,92,246,0.15); color: var(--primary);
+        box-shadow: 0 0 15px var(--primary-glow);
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap align-items-center justify-content-between mb-4 pb-2 border-bottom">
-    <div class="d-flex align-items-center">
-        <i class="bi bi-cloud-arrow-up fs-2 text-primary me-3"></i>
-        <div>
-            <h2 class="fw-bold mb-1">Asset Ingestion</h2>
-            <p class="mb-0 text-muted">Securely transmit media to the forensic analysis pipeline.</p>
-        </div>
-    </div>
-</div>
-
 <div class="row g-4">
+    <!-- Left Hand: Interactive Upload Zone -->
     <div class="col-lg-8">
-        <div class="card shadow-sm border-0 p-4 h-100">
-            <form method="post" enctype="multipart/form-data" id="uploadForm">
+        <div class="card shadow-sm border-0 p-1 h-100 bg-transparent">
+            <form method="post" enctype="multipart/form-data" id="uploadForm" class="h-100 d-flex flex-column">
                 {% csrf_token %}
                 
-                <div class="drag-drop-zone p-5 text-center mb-4" id="dropZone">
-                    <input type="file" name="image" id="id_image" class="hidden-input" accept="image/*" required multiple>
-                    
-                    <div id="uploadPrompt">
-                        <div class="drag-icon-box mb-4 shadow-sm"><i class="bi bi-cloud-upload"></i></div>
-                        <h4 class="fw-bold text-body mb-2">Initialize Secure Transfer</h4>
-                        <p class="text-muted mb-0">Drag and drop media here or click to browse protocol</p>
-                    </div>
-
-                    <div id="imagePreview" style="display: none;" class="position-relative z-index-1">
-                        <img id="previewImg" class="preview-image mb-3" src="" alt="Preview">
-                        <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
-                            <i class="bi bi-file-earmark-image fs-5 text-primary"></i>
-                            <h6 class="fw-bold text-body file-name mb-0"></h6>
-                        </div>
-                        <p class="text-muted small file-size mb-0"></p>
+                <div class="upload-container flex-grow-1 mb-4">
+                    <div class="drag-drop-zone p-4 text-center h-100" id="dropZone">
+                        <input type="file" name="image" id="id_image" class="hidden-input" accept="image/*" required multiple>
                         
-                        <div class="mt-4">
-                            <button type="button" class="btn btn-sm btn-outline-secondary px-3 position-relative" style="z-index: 10;" id="resetBtn">
-                                Drop Asset Buffer
+                        <!-- IDLE / DRAG HOVER STATE -->
+                        <div id="uploadPrompt" style="position: relative; z-index: 2;">
+                            <div class="drag-icon-box mb-4 shadow-sm"><i class="bi bi-cloud-arrow-up"></i></div>
+                            <h3 class="fw-bold text-main mb-2" style="letter-spacing: -0.5px;">Drag & Drop Asset Here</h3>
+                            <p class="text-muted mb-0" style="font-size: 1.05rem;">or click to browse local file protocol</p>
+                        </div>
+
+                        <!-- SUCCESS STATE (SINGLE FILE PREVIEW) -->
+                        <div id="imagePreview" style="display: none;" class="preview-container">
+                            <img id="previewImg" class="preview-image" src="" alt="Preview">
+
+                            <div class="glass-panel py-2 px-4 d-flex align-items-center gap-3 mb-4">
+                                <i class="bi bi-file-earmark-image fs-4 text-primary"></i>
+                                <div class="text-start">
+                                    <div class="fw-bold text-main file-name lh-1 mb-1">filename.jpg</div>
+                                    <div class="text-muted small file-size font-monospace">0.00 MB</div>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn btn-sm btn-secondary px-4 position-relative rounded-pill fw-medium" style="z-index: 20;" id="resetBtn">
+                                <i class="bi bi-x me-1"></i> Remove Asset
+                            </button>
+                        </div>
+
+                        <!-- SUCCESS STATE (MULTIPLE FILES) -->
+                        <div id="multiFileList" style="display: none;" class="w-100">
+                            <div class="glass-panel p-3 text-start">
+                                <div class="fw-bold text-main mb-3 text-center"></div>
+                                <div style="max-height: 400px; overflow-y: auto;" id="multiFileContent"></div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-secondary px-4 position-relative rounded-pill fw-medium mt-3" style="z-index: 20;" id="resetBtn2">
+                                <i class="bi bi-x me-1"></i> Remove All
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="d-flex flex-wrap gap-3 justify-content-end align-items-center border-top pt-4">
-                    <div class="small text-muted me-auto"><i class="bi bi-shield-lock-fill text-success me-1"></i> End-to-End Encrypted</div>
-                    <button type="submit" class="btn btn-primary px-4 fw-medium d-flex align-items-center gap-2" id="submitBtn" disabled>
-                        <i class="bi bi-cpu"></i> Execute Hashing
+                <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center pt-3 px-2">
+                    <div class="text-muted small d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-check text-success fs-5"></i> 
+                        <span>End-to-End Encrypted Tunnel</span>
+                    </div>
+                    <button type="submit" class="btn btn-primary px-5 py-2 fw-semibold d-flex align-items-center gap-2" id="submitBtn" disabled style="font-size: 1.05rem;">
+                        <i class="bi bi-cpu fs-5"></i> Start Secure Analysis
                     </button>
                 </div>
             </form>
         </div>
     </div>
     
+    <!-- Right Hand: Context & Security -->
     <div class="col-lg-4">
-        <div class="card border-0 shadow-sm p-4 h-100 bg-transparent">
-            <h6 class="text-uppercase text-muted fw-bold mb-4" style="font-size: 0.75rem; letter-spacing: 1px;">Supported Topologies</h6>
+        <div class="card p-4 h-100 border-0" style="background: rgba(255,255,255,0.01);">
+            <h6 class="text-uppercase text-muted fw-bold mb-4" style="font-size: 0.75rem; letter-spacing: 1.5px;">Supported Topologies</h6>
             
-            <div class="d-flex align-items-center gap-3 mb-3 p-3 rounded-3 bg-body shadow-sm border">
-                <i class="bi bi-image text-primary fs-3"></i>
+            <div class="format-chip">
+                <i class="bi bi-image" style="color: var(--secondary); font-size: 1.5rem;"></i>
                 <div>
-                    <div class="fw-bold text-body small">JPEG / JPG</div>
-                    <div class="text-muted" style="font-size: 0.8rem;">Standard photographic media</div>
+                    <div class="fw-bold text-main" style="font-size: 0.9rem;">JPEG / JPG</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">Standard photographic media</div>
                 </div>
             </div>
             
-            <div class="d-flex align-items-center gap-3 mb-3 p-3 rounded-3 bg-body shadow-sm border">
-                <i class="bi bi-images text-warning fs-3"></i>
+            <div class="format-chip">
+                <i class="bi bi-images" style="color: #10b981; font-size: 1.5rem;"></i>
                 <div>
-                    <div class="fw-bold text-body small">PNG</div>
-                    <div class="text-muted" style="font-size: 0.8rem;">Lossless raster graphics</div>
+                    <div class="fw-bold text-main" style="font-size: 0.9rem;">PNG</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">Lossless raster graphics</div>
                 </div>
             </div>
             
-            <div class="alert alert-warning border-warning border-start border-4 bg-opacity-10 mt-4 p-3 shadow-sm">
-                <h6 class="fw-bold mb-1 text-warning"><i class="bi bi-exclamation-triangle-fill me-1"></i> Data Privacy Notice</h6>
-                <p class="text-body mb-0" style="font-size: 0.8rem;">Assets uploaded undergo immediate volatile analysis. Data is processed locally and purged post-analysis.</p>
+            <!-- Processing Steps Infographic -->
+            <div class="process-timeline mt-5 mb-4" id="processTimeline">
+                <div class="process-step active">
+                    <div class="process-dot"><i class="bi bi-cloud-arrow-up"></i></div>
+                    <span class="text-muted" style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">Upload</span>
+                </div>
+                <div class="process-step">
+                    <div class="process-dot"><i class="bi bi-hash"></i></div>
+                    <span class="text-muted" style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">Hash</span>
+                </div>
+                <div class="process-step">
+                    <div class="process-dot"><i class="bi bi-cpu"></i></div>
+                    <span class="text-muted" style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">Verify</span>
+                </div>
+                <div class="process-step">
+                    <div class="process-dot"><i class="bi bi-file-earmark-text"></i></div>
+                    <span class="text-muted" style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase;">Report</span>
+                </div>
+            </div>
+
+            <!-- Premium SaaS Alert Box -->
+            <div class="premium-alert mt-auto mb-2">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="bi bi-lock-fill text-muted"></i>
+                    <h6 class="fw-bold mb-0 text-main" style="font-size: 0.9rem;">Data Privacy Enforcement</h6>
+                </div>
+                <p class="text-muted mb-0" style="font-size: 0.8rem; line-height: 1.5;">Assets uploaded undergo immediate volatile memory analysis. All cryptographic data is processed locally and payloads are purged strictly post-analysis.</p>
             </div>
         </div>
     </div>
@@ -117,12 +276,14 @@
 <!-- Holographic Loading Protocol -->
 <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 bg-dark shadow-lg">
+        <div class="modal-content border-0 glass-panel shadow-lg" style="background: rgba(15, 23, 42, 0.95);">
             <div class="modal-body text-center p-5 position-relative overflow-hidden rounded-3">
-                <div class="position-absolute w-100" style="top:0; left:0; height:2px; background: linear-gradient(90deg, transparent, var(--primary-blue), transparent); animation: scanning 1.5s infinite;"></div>
-                <div class="spinner-grow text-primary mb-4" style="width: 3rem; height: 3rem;"></div>
-                <h5 class="fw-bold text-white mb-2" id="loadingTitle">Running Diagnostic...</h5>
-                <p class="text-muted small mb-0">Securely transferring asset fragments.</p>
+                <div class="position-absolute w-100" style="top:0; left:0; height:2px; background: linear-gradient(90deg, transparent, var(--primary), transparent); animation: scanning 1.5s infinite;"></div>
+                
+                <div class="spinner-border text-primary mb-4" style="width: 3rem; height: 3rem; border-width: 0.2rem;" role="status"></div>
+                
+                <h5 class="fw-bold text-white mb-2" id="loadingTitle" style="letter-spacing: -0.5px;">Initializing Scan Protocol...</h5>
+                <p class="text-muted small mb-0">Securely transferring asset fragments into memory.</p>
             </div>
         </div>
     </div>
@@ -133,36 +294,106 @@
 {% block extra_js %}
 <script>
     const fileInput = document.getElementById('id_image');
+    const dropZone = document.getElementById('dropZone');
     const uploadPrompt = document.getElementById('uploadPrompt');
     const imagePreview = document.getElementById('imagePreview');
     const previewImg = document.getElementById('previewImg');
     const submitBtn = document.getElementById('submitBtn');
     const resetBtn = document.getElementById('resetBtn');
+    const timeline = document.getElementById('processTimeline');
+
+    // Drag and drop CSS animations
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults (e) { e.preventDefault(); e.stopPropagation(); }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => {
+            dropZone.classList.add('dragover');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => {
+            dropZone.classList.remove('dragover');
+        }, false);
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        let dt = e.dataTransfer;
+        let files = dt.files;
+        if(files && files[0]) {
+            fileInput.files = files;
+            handleFileSelect(files[0]);
+        }
+    }, false);
 
     if(fileInput) {
         fileInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const file = this.files[0];
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                    document.querySelector('.file-name').textContent = file.name;
-                    document.querySelector('.file-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB ' + (fileInput.files.length > 1 ? '(+ ' + (fileInput.files.length - 1) + ' more block(s))' : '');
-                    uploadPrompt.style.display = 'none';
-                    imagePreview.style.display = 'block';
-                    submitBtn.disabled = false;
-                }
-                reader.readAsDataURL(file);
-            }
+            updateFileList();
         });
 
-        resetBtn.addEventListener('click', function(e) {
+        function updateFileList() {
+            const files = fileInput.files;
+            if (!files || files.length === 0) {
+                uploadPrompt.style.display = 'block';
+                document.getElementById('imagePreview').style.display = 'none';
+                document.getElementById('multiFileList').style.display = 'none';
+                submitBtn.disabled = true;
+                timeline.classList.remove('upload-ready');
+                return;
+            }
+
+            uploadPrompt.style.display = 'none';
+            submitBtn.disabled = false;
+            timeline.classList.add('upload-ready');
+
+            if (files.length === 1) {
+                // Single file: show image preview
+                const file = files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.querySelector('.file-name').textContent = file.name;
+                    document.querySelector('.file-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+                    document.getElementById('imagePreview').style.display = 'flex';
+                    document.getElementById('multiFileList').style.display = 'none';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                // Multiple files: show file list
+                document.getElementById('imagePreview').style.display = 'none';
+                document.getElementById('multiFileList').style.display = 'block';
+
+                const listHTML = `<div class="fw-bold mb-3 text-center text-main">${files.length} files selected</div>` +
+                    Array.from(files).map((f, i) =>
+                        `<div class="d-flex align-items-center gap-2 py-2 border-bottom border-opacity-10" id="file-row-${i}">
+                            <i class="bi bi-file-earmark-image text-primary"></i>
+                            <span class="text-main small fw-semibold flex-grow-1 text-truncate">${f.name}</span>
+                            <span class="text-muted small font-monospace">${(f.size/1024/1024).toFixed(2)} MB</span>
+                            <span class="badge bg-secondary small" id="file-status-${i}">Queued</span>
+                        </div>`
+                    ).join('');
+                document.getElementById('multiFileContent').innerHTML = listHTML;
+            }
+        }
+
+        document.getElementById('resetBtn').addEventListener('click', function(e) {
             e.preventDefault(); e.stopPropagation();
             fileInput.value = '';
-            uploadPrompt.style.display = 'block';
-            imagePreview.style.display = 'none';
-            submitBtn.disabled = true;
+            updateFileList();
         });
+
+        const resetBtn2 = document.getElementById('resetBtn2');
+        if (resetBtn2) {
+            resetBtn2.addEventListener('click', function(e) {
+                e.preventDefault(); e.stopPropagation();
+                fileInput.value = '';
+                updateFileList();
+            });
+        }
     }
 
     const uf = document.getElementById('uploadForm');
@@ -170,9 +401,21 @@
         uf.addEventListener('submit', function() {
             new bootstrap.Modal(document.getElementById('loadingModal')).show();
             let el = document.getElementById('loadingTitle');
-            let txt = ['Extracting EXIF Signature...', 'Scanning Sub-pixel Matrices...', 'Rendering Crytpo Hashes...'];
-            let count = 0;
-            setInterval(() => { el.textContent = txt[count % txt.length]; count++; }, 1500);
+            const files = fileInput.files;
+
+            if (files.length > 1) {
+                // Multiple files: cycle through filenames
+                let idx = 0;
+                setInterval(() => {
+                    el.textContent = `Analyzing ${files[idx % files.length].name}...`;
+                    idx++;
+                }, 1200);
+            } else {
+                // Single file: cycle through generic messages
+                let txt = ['Extracting Cryptographic Hashes...', 'Analyzing Structural Data...', 'Scanning Pixel Matrices...'];
+                let count = 0;
+                setInterval(() => { el.textContent = txt[count % txt.length]; count++; }, 1800);
+            }
         });
     }
 </script>

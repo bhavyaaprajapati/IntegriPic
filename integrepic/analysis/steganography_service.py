@@ -173,6 +173,9 @@ class SteganographyService:
                 elif "not iterable" in error_msg:
                     logger.debug("LSB analysis failed due to image mode issues")
                     return None
+                elif "impossible to detect message" in error_msg:
+                    logger.debug("No LSB steganography payload boundaries detected")
+                    return None
                 else:
                     logger.warning(f"LSB analysis failed with unknown error: {lsb_error}")
                     return None
